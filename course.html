@@ -9,13 +9,101 @@
 <style>
   body { background: var(--warm-white); }
 
-  /* COURSE LAYOUT */
-  .course-layout {
-    display: grid;
-    grid-template-columns: 340px 1fr;
+  .wip-page {
     min-height: calc(100vh - 90px);
     margin-top: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
   }
+
+  .wip-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 40%, rgba(43,66,36,0.05) 0%, transparent 70%);
+  }
+  .wip-grid {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(43,66,36,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(43,66,36,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .wip-inner {
+    position: relative; z-index: 1;
+    text-align: center; max-width: 620px;
+  }
+
+  .wip-icon {
+    font-size: 4.5rem; display: block; margin-bottom: 1.5rem;
+    animation: wobble 3s ease-in-out infinite;
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  .wip-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(180,140,0,0.08); border: 1px solid rgba(180,140,0,0.25);
+    border-radius: 100px; padding: 0.35rem 1rem;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #9a7500; margin-bottom: 1.5rem;
+  }
+
+  .wip-inner h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900; color: var(--forest);
+    line-height: 1.1; margin-bottom: 1rem;
+  }
+  .wip-inner h1 em { font-style: italic; color: var(--gold); }
+
+  .wip-desc {
+    font-size: 1rem; line-height: 1.75; color: #6b7280;
+    margin-bottom: 2.5rem;
+  }
+
+  .wip-progress-wrap {
+    background: white; border-radius: 20px; padding: 2rem;
+    border: 1px solid rgba(43,66,36,0.07);
+    box-shadow: 0 8px 32px rgba(43,66,36,0.07);
+    margin-bottom: 2.5rem; text-align: left;
+  }
+  .wip-progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.82rem; font-weight: 600; color: var(--forest);
+    margin-bottom: 0.6rem;
+  }
+  .wip-progress-track {
+    height: 10px; background: rgba(43,66,36,0.07);
+    border-radius: 100px; overflow: hidden; margin-bottom: 1.5rem;
+  }
+  .wip-progress-fill {
+    height: 100%; width: 35%;
+    background: linear-gradient(90deg, var(--sage), var(--mint));
+    border-radius: 100px;
+    animation: fillWip 2s 0.5s ease both;
+  }
+  @keyframes fillWip { from { width: 0%; } to { width: 35%; } }
+  .wip-milestones { display: flex; flex-direction: column; gap: 0.6rem; }
+  .wip-milestone {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 0.85rem; color: #6b7280;
+  }
+  .wip-milestone-dot {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+  }
+  .dot-done { background: var(--mint); color: white; }
+  .dot-active { background: var(--gold); color: var(--forest); }
+  .dot-pending { background: rgba(43,66,36,0.08); color: #9ca3af; }
+  .wip-milestone.done { color: var(--forest); font-weight: 500; }
+
+  .wip-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
 
   /* SIDEBAR */
   .sidebar {
@@ -186,274 +274,43 @@
   <a href="course.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Courses</a>
   <a href="https://donorbox.org/brightside-finance-operations" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--primary);background:var(--secondary);padding:0.6rem 1.8rem;border-radius:100px;font-size:1rem;">Donate</a>
 </div>
-<div class="course-layout">
+<div class="wip-page">
+  <div class="wip-bg"></div>
+  <div class="wip-grid"></div>
+  <div class="wip-inner">
+    <span class="wip-icon">🚧</span>
+    <div class="wip-eyebrow">⏳ Work in Progress</div>
+    <h1>Courses are <em>on the way</em></h1>
+    <p class="wip-desc">Our team is building out the full interactive course experience for all three programs. We're working hard to bring you high-quality video lessons, worksheets, and tools — all completely free.</p>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-course-title" id="sidebarTitle">Launch Pad: Adult Finance Foundations</div>
-      <div class="sidebar-progress-bar"><div class="sidebar-progress-fill" id="progressFill"></div></div>
-      <div class="sidebar-progress-label" id="progressLabel">4 of 12 lessons complete</div>
+    <div class="wip-progress-wrap">
+      <div class="wip-progress-label">
+        <span>Build Progress</span>
+        <span style="color:#9ca3af;">~35% complete</span>
+      </div>
+      <div class="wip-progress-track"><div class="wip-progress-fill"></div></div>
+      <div class="wip-milestones">
+        <div class="wip-milestone done"><div class="wip-milestone-dot dot-done">✓</div>Program structure &amp; curriculum planned</div>
+        <div class="wip-milestone done"><div class="wip-milestone-dot dot-done">✓</div>Module outlines written for all 3 programs</div>
+        <div class="wip-milestone"><div class="wip-milestone-dot dot-active">→</div>Lesson content &amp; videos in production</div>
+        <div class="wip-milestone"><div class="wip-milestone-dot dot-pending">○</div>Interactive quizzes &amp; worksheets</div>
+        <div class="wip-milestone"><div class="wip-milestone-dot dot-pending">○</div>Full course player launch</div>
+      </div>
     </div>
 
-    <div class="course-switcher">
-      <div class="course-switcher-label">Switch Program</div>
-      <select class="course-select" id="courseSwitcher" onchange="switchCourse(this.value)">
-        <option value="launchpad" selected>🏠 Launch Pad (Ages 19–35)</option>
-        <option value="sprouts">🧸 Money Sprouts (Ages 5–10)</option>
-        <option value="smartstart">🎒 Smart Start (Ages 11–18)</option>
-        <option value="peak">📈 Peak Years (Ages 35–55)</option>
-        <option value="golden">🌅 Golden Path (Ages 55+)</option>
-        <option value="medical">🏥 Medical Finances</option>
-      </select>
+    <div class="wip-actions">
+      <a href="curriculum.html" class="btn-primary">Browse Programs →</a>
+      <a href="index.html" class="btn-secondary">Back to Home</a>
     </div>
-
-    <div class="module-list" id="moduleList"></div>
-  </aside>
-
-  <!-- MAIN COURSE CONTENT -->
-  <main class="course-main" id="courseMain">
-    <!-- Content injected by JS -->
-  </main>
-
+  </div>
 </div>
 
 <script>
-const courses = {
-  launchpad: {
-    title: "Launch Pad: Adult Finance Foundations",
-    totalLessons: 12,
-    completedLessons: 4,
-    modules: [
-      { title: "Module 1: Budgeting", lessons: [
-        { id: 1, title: "Adult Budgeting Overview", type: "🎬", duration: "12 min", completed: true },
-        { id: 2, title: "The 50/30/20 Rule", type: "🎬", duration: "18 min", completed: true },
-        { id: 3, title: "Zero-Based Budgeting", type: "📄", duration: "10 min", completed: true },
-      ]},
-      { title: "Module 2: Emergency Fund", lessons: [
-        { id: 4, title: "Why You Need 3-6 Months", type: "🎬", duration: "14 min", completed: true },
-        { id: 5, title: "Building It on a Tight Budget", type: "🎬", duration: "16 min", completed: false, active: true },
-        { id: 6, title: "Where to Keep Your Fund", type: "📄", duration: "8 min", completed: false },
-      ]},
-      { title: "Module 3: Debt Payoff", lessons: [
-        { id: 7, title: "The Debt Snowball Method", type: "🎬", duration: "15 min", completed: false },
-        { id: 8, title: "The Debt Avalanche Method", type: "🎬", duration: "12 min", completed: false },
-        { id: 9, title: "Negotiating Interest Rates", type: "📄", duration: "10 min", completed: false },
-      ]},
-      { title: "Module 4: Investing Basics", lessons: [
-        { id: 10, title: "Stocks, Bonds & Index Funds", type: "🎬", duration: "20 min", completed: false },
-        { id: 11, title: "The Power of Compound Interest", type: "🧮", duration: "12 min", completed: false },
-        { id: 12, title: "Opening Your First Investment Account", type: "🎬", duration: "16 min", completed: false },
-      ]},
-    ]
-  },
-  medical: {
-    title: "Medical Finances: Full Course",
-    totalLessons: 10,
-    completedLessons: 0,
-    modules: [
-      { title: "Module 1: Insurance", lessons: [
-        { id: 1, title: "HMO vs PPO vs HDHP", type: "🎬", duration: "15 min", completed: false },
-        { id: 2, title: "Key Insurance Terms", type: "📄", duration: "10 min", completed: false },
-      ]},
-      { title: "Module 2: Medical Debt", lessons: [
-        { id: 3, title: "When You Get a Big Bill", type: "🎬", duration: "14 min", completed: false },
-        { id: 4, title: "Your Patient Rights", type: "📄", duration: "8 min", completed: false },
-      ]},
-      { title: "Module 3: HSA & FSA", lessons: [
-        { id: 5, title: "HSA vs FSA Explained", type: "🎬", duration: "16 min", completed: false },
-        { id: 6, title: "Maximizing Tax-Free Savings", type: "📄", duration: "10 min", completed: false },
-      ]},
-    ]
-  }
-};
-
-const lessonContent = {
-  5: {
-    breadcrumb: "Launch Pad → Module 2: Emergency Fund",
-    title: "Building an Emergency Fund on a Tight Budget",
-    tags: ["Emergency Fund", "Budgeting", "Saving"],
-    duration: "16 min",
-    type: "Video Lesson",
-    intro: "Building an emergency fund when money is already tight feels impossible — but it's actually more critical when your finances are stretched. The key is shifting from trying to save a large lump sum to building a small, consistent habit that compounds over time.",
-    sections: [
-      { heading: "Why "I Can't Afford To Save" Is the Trap", body: "The cruel irony of financial stress is that it discourages the very behavior that would reduce that stress. When every dollar is accounted for, saving feels like an impossibility. But consider: if you had $500 in savings right now, how many of your recent financial stressors would have been solved or significantly reduced? For most people, the answer is \"most of them.\"" },
-      { concept: { label: "KEY INSIGHT", text: "Your goal isn't to save three months of expenses overnight. Your goal is to save $500 before the next emergency happens. That one number changes your entire financial trajectory." }},
-      { heading: "The Micro-Saving Method", body: "Instead of budgeting a fixed amount to save each month, use the \"micro-saving\" approach: identify 3–5 small, painless spending adjustments that collectively free up $20–$50/week. That adds up to $1,040–$2,600/year — more than enough for a starter emergency fund." },
-      { example: { scenario: "Maya earns $2,800/month after taxes. After rent, food, and bills, she has about $180 left. Instead of trying to save a fixed $100, she:\n• Cuts one streaming service: +$15/mo\n• Meal preps 3 lunches/week: +$45/mo\n• Cancels unused gym membership: +$40/mo\nTotal new savings capacity: $100/month = $1,200/year" }},
-      { heading: "Where to Keep It — And Why It Matters", body: "Your emergency fund should live in a high-yield savings account (HYSA), not your regular checking account. Keeping it separate prevents accidental spending. Current HYSAs offer 4–5% APY — your money actually grows while it waits." },
-      { quiz: true }
-    ]
-  }
-};
-
-let currentLessonId = 5;
-let currentCourse = 'launchpad';
-
-function buildSidebar(course) {
-  const data = courses[course];
-  document.getElementById('sidebarTitle').textContent = data.title;
-  const pct = Math.round((data.completedLessons / data.totalLessons) * 100);
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('progressLabel').textContent = `${data.completedLessons} of ${data.totalLessons} lessons complete`;
-
-  const list = document.getElementById('moduleList');
-  list.innerHTML = '';
-  data.modules.forEach(mod => {
-    const header = document.createElement('div');
-    header.className = 'module-group-header';
-    header.textContent = mod.title;
-    list.appendChild(header);
-    mod.lessons.forEach(lesson => {
-      const item = document.createElement('div');
-      item.className = 'lesson-item' + (lesson.completed ? ' completed' : '') + (lesson.active || lesson.id === currentLessonId ? ' active' : '');
-      item.onclick = () => loadLesson(lesson.id, course);
-      item.innerHTML = `<div class="lesson-icon">${lesson.completed ? '✓' : lesson.type}</div><div class="lesson-info"><div class="lesson-name">${lesson.title}</div><div class="lesson-meta"><span>${lesson.duration}</span></div></div>`;
-      list.appendChild(item);
-    });
-  });
-}
-
-function loadLesson(id, course) {
-  currentLessonId = id;
-  document.querySelectorAll('.lesson-item').forEach(el => el.classList.remove('active'));
-  buildSidebar(course);
-  renderLesson();
-  window.scrollTo({top: 0, behavior: 'smooth'});
-}
-
-function switchCourse(val) {
-  currentCourse = val;
-  currentLessonId = courses[val].modules[0].lessons[0].id;
-  buildSidebar(val);
-  renderLesson();
-}
-
-function renderLesson() {
-  const content = lessonContent[currentLessonId];
-  const main = document.getElementById('courseMain');
-
-  if (!content) {
-    // Generic lesson for other IDs
-    const allLessons = courses[currentCourse].modules.flatMap(m => m.lessons);
-    const lesson = allLessons.find(l => l.id === currentLessonId);
-    const name = lesson ? lesson.title : 'Lesson';
-    main.innerHTML = `
-      <div class="video-player"><div class="video-bg-pattern"></div><div class="play-button">▶</div><div class="video-label">${name.toUpperCase()}</div><div class="video-duration">${lesson ? lesson.duration : '—'}</div></div>
-      <div class="lesson-breadcrumb">${courses[currentCourse].title} → Coming Soon</div>
-      <h1 class="lesson-title">${name}</h1>
-      <div class="lesson-tags"><span class="tag">Video Lesson</span><span class="tag tag-gold">Free</span></div>
-      <p class="lesson-intro">This lesson is coming soon. Our curriculum team is currently finalizing the content for this module. Check back shortly, or explore other lessons in this program.</p>
-      ${buildLessonNav()}
-    `;
-    return;
-  }
-
-  let sectionsHtml = '';
-  content.sections.forEach(s => {
-    if (s.heading) sectionsHtml += `<div class="content-block"><h3>${s.heading}</h3><p>${s.body}</p></div>`;
-    if (s.concept) sectionsHtml += `<div class="key-concept"><div class="key-concept-label">${s.concept.label}</div><div class="key-concept-text">${s.concept.text}</div></div>`;
-    if (s.example) sectionsHtml += `<div class="example-box"><div class="example-label">📊 Real-World Example</div><div class="example-scenario">${s.example.scenario.replace(/\n/g,'<br>')}</div></div>`;
-    if (s.quiz) sectionsHtml += buildQuiz();
-  });
-
-  main.innerHTML = `
-    <div class="video-player">
-      <div class="video-bg-pattern"></div>
-      <div class="play-button" onclick="this.innerHTML='⏸'">▶</div>
-      <div class="video-label">${content.type.toUpperCase()}</div>
-      <div class="video-duration">${content.duration}</div>
-    </div>
-    <div class="lesson-breadcrumb">${content.breadcrumb}</div>
-    <h1 class="lesson-title">${content.title}</h1>
-    <div class="lesson-tags">${content.tags.map(t => `<span class="tag">${t}</span>`).join('')}<span class="tag tag-gold">Free</span></div>
-    <div class="lesson-body">
-      <p class="lesson-intro">${content.intro}</p>
-      ${sectionsHtml}
-    </div>
-    <div class="resources-panel">
-      <div class="resources-panel-title">📎 Lesson Resources</div>
-      <div class="resource-links">
-        <a href="#" class="resource-link"><span class="resource-link-icon">📄</span>Emergency Fund Worksheet (PDF)</a>
-        <a href="#" class="resource-link"><span class="resource-link-icon">🧮</span>Emergency Fund Calculator</a>
-        <a href="#" class="resource-link"><span class="resource-link-icon">📋</span>Top High-Yield Savings Accounts (2025)</a>
-      </div>
-    </div>
-    ${buildLessonNav()}
-  `;
-}
-
-function buildQuiz() {
-  return `
-    <div class="quiz-block">
-      <div class="quiz-label">🧠 Quick Check</div>
-      <div class="quiz-question">What is the recommended first milestone for an emergency fund?</div>
-      <div class="quiz-options">
-        <div class="quiz-option" onclick="answerQuiz(this, false)"><div class="quiz-option-letter">A</div>6 months of all expenses saved</div>
-        <div class="quiz-option" onclick="answerQuiz(this, false)"><div class="quiz-option-letter">B</div>$10,000 in a money market account</div>
-        <div class="quiz-option" onclick="answerQuiz(this, true)"><div class="quiz-option-letter">C</div>$500–$1,000 as a starter fund</div>
-        <div class="quiz-option" onclick="answerQuiz(this, false)"><div class="quiz-option-letter">D</div>Enough to cover 1 month's rent</div>
-      </div>
-      <div class="quiz-feedback" id="quizFeedback"></div>
-    </div>
-  `;
-}
-
-function answerQuiz(el, correct) {
-  document.querySelectorAll('.quiz-option').forEach(o => o.onclick = null);
-  const fb = document.getElementById('quizFeedback');
-  if (correct) {
-    el.classList.add('correct');
-    fb.className = 'quiz-feedback show correct-fb';
-    fb.textContent = '✓ Correct! Starting with $500–$1,000 gives you protection against the most common emergencies without feeling overwhelming. Once you hit that, aim for one month, then three.';
-  } else {
-    el.classList.add('wrong');
-    document.querySelectorAll('.quiz-option')[2].classList.add('correct');
-    fb.className = 'quiz-feedback show wrong-fb';
-    fb.textContent = '✗ Not quite. The first goal is $500–$1,000 — a "starter fund" that handles most everyday emergencies. Building to 3–6 months comes later.';
-  }
-}
-
-function buildLessonNav() {
-  const allLessons = courses[currentCourse].modules.flatMap(m => m.lessons);
-  const idx = allLessons.findIndex(l => l.id === currentLessonId);
-  const prev = idx > 0 ? allLessons[idx - 1] : null;
-  const next = idx < allLessons.length - 1 ? allLessons[idx + 1] : null;
-  return `
-    <div class="lesson-nav">
-      ${prev ? `<div class="nav-prev" onclick="loadLesson(${prev.id}, '${currentCourse}')"><span>←</span><div><div class="nav-direction">PREVIOUS</div><div class="nav-lesson-name">${prev.title}</div></div></div>` : '<div></div>'}
-      <button class="mark-complete-btn btn-primary" onclick="markComplete(this)">Mark Complete ✓</button>
-      ${next ? `<div class="nav-next" onclick="loadLesson(${next.id}, '${currentCourse}')"><div style="text-align:right"><div class="nav-direction">NEXT UP</div><div class="nav-lesson-name">${next.title}</div></div><span>→</span></div>` : '<div></div>'}
-    </div>
-  `;
-}
-
-function markComplete(btn) {
-  btn.textContent = '✓ Completed!';
-  btn.style.background = 'var(--mint)';
-  btn.disabled = true;
-  // Update sidebar
-  const allLessons = courses[currentCourse].modules.flatMap(m => m.lessons);
-  const lesson = allLessons.find(l => l.id === currentLessonId);
-  if (lesson && !lesson.completed) {
-    lesson.completed = true;
-    courses[currentCourse].completedLessons++;
-    buildSidebar(currentCourse);
-  }
-}
-
-// Init
-buildSidebar(currentCourse);
-renderLesson();
-</script>
-<script>
 (function(){
-  // Scroll effect
   var nav = document.getElementById('mainNav');
   window.addEventListener('scroll', function(){
     nav.classList.toggle('scrolled', window.scrollY > 40);
   });
-  // Mark active page
   var page = location.pathname.split('/').pop() || 'index.html';
   var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course'};
   if(map[page]){ var el=document.getElementById(map[page]); if(el) el.classList.add('active'); }
