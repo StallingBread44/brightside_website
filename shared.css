@@ -23,6 +23,17 @@
 }
 
 html { scroll-behavior: smooth; }
+/* For modern browsers */
+/* Hide scrollbar but allow scrolling */
+body {
+  overflow-y: scroll;          /* ensures vertical scrolling */
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari, Opera */
+}
 body { padding-top: 0; font-family: 'DM Sans', sans-serif; background: var(--warm-white); color: var(--charcoal); overflow-x: hidden; }
 
 /* ══════════════════════════════
