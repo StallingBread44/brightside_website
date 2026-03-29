@@ -203,13 +203,13 @@
   /* ── User nav button + dropdown ── */
   .nav-user-btn {
     position: fixed;
-    top: 0; right: 1.5rem;
+    top: 18px; right: 1.5rem;
     z-index: 200;
-    height: 72px;
+    height: 64px;
     display: none;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 1.2rem 0 0.9rem;
+    padding: 1.2rem 1.4rem;
     background: var(--forest);
     border-radius: 100px;
     color: var(--cream) !important;
@@ -450,18 +450,76 @@
   <div class="footer-bottom"><span>© 2025 Brightside Finance Foundation</span><div class="footer-social"><a href="#" class="social-link">𝕏</a><a href="#" class="social-link">in</a><a href="#" class="social-link">f</a><a href="#" class="social-link">▶</a></div></div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-  const reveals = document.querySelectorAll('.reveal');
-  const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }), {threshold:0.12});
-  reveals.forEach(el => obs.observe(el));
-</script>
 <script>
 (function(){
-  // Scroll effect
   var nav = document.getElementById('mainNav');
   window.addEventListener('scroll', function(){
     nav.classList.toggle('scrolled', window.scrollY > 40);
   });
-  // Mark active page
   var page = location.pathname.split('/').pop() || 'index.html';
-  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'n
+  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course'};
+  if(map[page]){ var el=document.getElementById(map[page]); if(el) el.classList.add('active'); }
+})();
+</script>
+
+<!-- Firebase auth for nav -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  const app  = initializeApp({
+  apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
+  authDomain: "website-bs-fbeab.firebaseapp.com",
+  projectId: "website-bs-fbeab",
+  storageBucket: "website-bs-fbeab.firebasestorage.app",
+  messagingSenderId: "995737362868",
+  appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
+});
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, user => {
+    const loginBtn    = document.getElementById('nav-login-btn-link');
+    const userBtn     = document.getElementById('nav-user-btn');
+    const userNameEl  = document.getElementById('nav-user-name');
+    const mobileLogin = document.getElementById('mobile-login-link');
+    const mobileUser  = document.getElementById('mobile-user-link');
+    if (user) {
+      const name = user.displayName || user.email.split('@')[0];
+      if (loginBtn)    loginBtn.style.display  = 'none';
+      if (userBtn)     { userBtn.style.display = 'inline-flex'; userNameEl.textContent = name; }
+      if (mobileLogin) mobileLogin.style.display = 'none';
+      if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
+    } else {
+      if (loginBtn)    loginBtn.style.display  = '';
+      if (userBtn)     userBtn.style.display   = 'none';
+      if (mobileLogin) mobileLogin.style.display = '';
+      if (mobileUser)  mobileUser.style.display  = 'none';
+    }
+  });
+
+  window.navSignOut = async () => {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
+</script>
+
+<script>
+  function toggleDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    btn.classList.toggle('open');
+    dd.classList.toggle('open');
+  }
+  // Close on outside click
+  document.addEventListener('click', e => {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
+      btn.classList.remove('open');
+      dd.classList.remove('open');
+    }
+  });
+
+  // Dark mode init
+  if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+</script>
