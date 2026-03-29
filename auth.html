@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brightside — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    updateProfile
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
+  authDomain: "website-bs-fbeab.firebaseapp.com",
+  projectId: "website-bs-fbeab",
+  storageBucket: "website-bs-fbeab.firebasestorage.app",
+  messagingSenderId: "995737362868",
+  appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
+};
+  // ─────────────────────────────────────────────────────────────────
+
+  const app      = initializeApp(firebaseConfig);
+  const auth     = getAuth(app);
+  const db       = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  onAuthStateChanged(auth, user => {
+    if (user) window.location.href = "index.html";
+  });
+
+  function showError(msg) {
+    const el = document.getElementById("error-msg");
+    el.textContent = msg;
+    el.style.opacity = "1";
+    el.style.maxHeight = "40px";
+    el.style.marginBottom = "1rem";
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.maxHeight = "0";
+      el.style.marginBottom = "0";
+    }, 4500);
+  }
+
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    btn.textContent = loading
+      ? (btn.id === "google-btn" ? "Connecting…" : "Please wait…")
+      : btn.dataset.label;
+  }
+
+  function friendlyError(code) {
+    const map = {
+      "auth/user-not-found":        "No account found with this email.",
+      "auth/wrong-password":        "Incorrect password. Try again.",
+      "auth/invalid-credential":    "Incorrect email or password.",
+      "auth/email-already-in-use":  "An account with this email already exists.",
+      "auth/weak-password":         "Password must be at least 6 characters.",
+      "auth/invalid-email":         "Please enter a valid email address.",
+      "auth/popup-closed-by-user":  "Google sign-in was cancelled.",
+      "auth/network-request-failed":"Network error. Check your connection.",
+    };
+    return map[code] || "Something went wrong. Please try again.";
+  }
+
+  window.handleSubmit = async () => {
+    const email    = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const btn      = document.getElementById("submit-btn");
+    const mode     = document.getElementById("auth-mode").dataset.mode;
+    if (!email || !password) { showError("Please fill in all fields."); return; }
+    if (mode === "signup") {
+      const name = document.getElementById("full-name").value.trim();
+      const dob  = document.getElementById("dob").value;
+      if (!name || !dob) { showError("Please fill in all fields."); return; }
+    }
+    setLoading(btn, true);
+    try {
+      if (mode === "login") {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        const name = document.getElementById("full-name").value.trim();
+        const dob  = document.getElementById("dob").value;
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+        await setDoc(doc(db, "users", cred.user.uid), {
+          name, dob, email, createdAt: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      showError(friendlyError(e.code));
+      setLoading(btn, false);
+    }
+  };
+
+  window.handleGoogle = async () => {
+    const btn = document.getElementById("google-btn");
+    setLoading(btn, true);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      showError(friendlyError(e.code));
+      setLoading(btn, false);
+    }
+  };
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:     #2b4224;
+    --forest:      #2b4224;
+    --sage:        #8eba7e;
+    --mint:        #a8cc98;
+    --gold:        #a8ac94;
+    --gold-light:  #c8ccb0;
+    --rust:        #7a6b3a;
+    --cream:       #f5f0e8;
+    --warm-white:  #faf8f4;
+    --secondary:   #e8f0e0;
+    --text-muted:  #6b7280;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--warm-white);
+    color: var(--forest);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── NAV (matches site nav) ─────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 3rem;
+    background: rgba(250,248,244,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s;
+  }
+  nav.scrolled {
+    border-bottom-color: rgba(43,66,36,0.08);
+    box-shadow: 0 4px 24px rgba(43,66,36,0.06);
+  }
+  .nav-logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+  .nav-logo-img { height: 36px; width: 36px; object-fit: contain; }
+  .nav-brand { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 900; line-height: 1; }
+  .brand-primary { color: var(--forest); }
+  .brand-secondary { color: var(--sage); }
+  .nav-back {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    color: var(--text-muted); font-size: 0.88rem; font-weight: 500;
+    text-decoration: none; transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--forest); }
+  .nav-back::before { content: '←'; }
+
+  /* ── PAGE LAYOUT ────────────────────────────────────── */
+  .auth-wrapper {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 72px;
+    min-height: 100vh;
+  }
+
+  /* ── LEFT PANEL ─────────────────────────────────────── */
+  .auth-left {
+    background: var(--primary);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 4rem;
+  }
+
+  .auth-left-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 60% at 80% 20%, rgba(142,186,126,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(168,172,148,0.1) 0%, transparent 60%);
+  }
+
+  .auth-left-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(142,186,126,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(142,186,126,0.06) 1px, transparent 1px);
+    background-size: 52px 52px;
+    mask-image: radial-gradient(ellipse 90% 90% at 50% 50%, black, transparent);
+  }
+
+  /* Floating progress card */
+  .preview-card {
+    position: relative; z-index: 1;
+    background: white;
+    border-radius: 20px;
+    padding: 1.8rem;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.18);
+    margin-bottom: 3rem;
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  .preview-card-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.4rem;
+  }
+  .preview-card-title { font-weight: 700; font-size: 0.9rem; color: var(--forest); }
+  .preview-badge {
+    background: rgba(142,186,126,0.15); color: var(--sage);
+    padding: 0.25rem 0.75rem; border-radius: 100px; font-size: 0.72rem; font-weight: 700;
+  }
+  .preview-items { display: flex; flex-direction: column; gap: 0.9rem; }
+  .preview-label { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 500; color: #4a5568; margin-bottom: 0.35rem; }
+  .preview-bar { height: 7px; background: rgba(43,66,36,0.08); border-radius: 100px; overflow: hidden; }
+  .preview-fill { height: 100%; border-radius: 100px; animation: fillBar 1.5s ease both; }
+  @keyframes fillBar { from { width: 0%; } }
+  .pf-1 { width: 78%; background: linear-gradient(90deg, var(--sage), var(--mint)); animation-delay: 0.3s; }
+  .pf-2 { width: 52%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); animation-delay: 0.5s; }
+  .pf-3 { width: 35%; background: linear-gradient(90deg, var(--forest), var(--sage)); animation-delay: 0.7s; }
+
+  .preview-divider { height: 1px; background: rgba(43,66,36,0.06); margin: 1.2rem 0; }
+  .preview-footer { display: flex; align-items: center; gap: 0.6rem; }
+  .preview-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(142,186,126,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--sage); }
+  .preview-user-name { font-size: 0.82rem; font-weight: 600; color: var(--forest); }
+  .preview-user-level { font-size: 0.72rem; color: #9ca3af; font-family: 'DM Mono', monospace; }
+
+  /* Left copy */
+  .auth-left-copy { position: relative; z-index: 1; }
+  .auth-left-eyebrow {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(142,186,126,0.15); border: 1px solid rgba(142,186,126,0.25);
+    border-radius: 100px; padding: 0.3rem 0.9rem;
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--mint); margin-bottom: 1.2rem;
+  }
+  .eyebrow-dot { width: 5px; height: 5px; background: var(--mint); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .auth-left h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--cream);
+    margin-bottom: 1rem;
+  }
+  .auth-left h2 em { font-style: italic; color: var(--gold-light); }
+
+  .auth-left p {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: rgba(245,240,232,0.65);
+    font-weight: 300;
+    max-width: 380px;
+    margin-bottom: 2rem;
+  }
+
+  .auth-left-features { display: flex; flex-direction: column; gap: 0.75rem; }
+  .feature-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 0.85rem; color: rgba(245,240,232,0.7); font-weight: 400;
+  }
+  .feature-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: rgba(142,186,126,0.15); border: 1px solid rgba(142,186,126,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; flex-shrink: 0;
+  }
+
+  /* ── RIGHT PANEL ────────────────────────────────────── */
+  .auth-right {
+    background: var(--warm-white);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem 4.5rem;
+    position: relative;
+  }
+
+  .auth-right-inner { max-width: 420px; width: 100%; margin: 0 auto; }
+
+  /* Tab row */
+  .tab-row {
+    display: flex;
+    border-bottom: 2px solid rgba(43,66,36,0.08);
+    margin-bottom: 2rem;
+    gap: 0;
+  }
+  .tab {
+    flex: 1; background: none; border: none; cursor: pointer;
+    padding: 0.75rem 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 500;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.01em;
+  }
+  .tab.active { color: var(--forest); border-bottom-color: var(--sage); }
+  .tab:hover:not(.active) { color: var(--forest); }
+
+  /* Heading */
+  .auth-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 900; line-height: 1.1;
+    color: var(--forest); margin-bottom: 0.4rem;
+  }
+  .auth-sub {
+    font-size: 0.88rem; color: var(--text-muted); margin-bottom: 2rem;
+    line-height: 1.5; font-weight: 300;
+  }
+
+  /* Google button */
+  .google-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+    padding: 0.85rem 1.5rem;
+    background: white;
+    border: 2px solid rgba(43,66,36,0.12);
+    border-radius: 100px;
+    color: var(--forest);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(43,66,36,0.06);
+  }
+  .google-btn:hover {
+    border-color: var(--sage);
+    box-shadow: 0 4px 16px rgba(43,66,36,0.1);
+    transform: translateY(-1px);
+  }
+  .google-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+  .google-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(43,66,36,0.1);
+  }
+  .divider span {
+    font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #9ca3af; font-family: 'DM Mono', monospace;
+  }
+
+  /* Fields */
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block;
+    font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--forest); font-weight: 600;
+    margin-bottom: 0.45rem; opacity: 0.7;
+  }
+  .field input {
+    width: 100%; padding: 0.85rem 1.1rem;
+    background: white;
+    border: 2px solid rgba(43,66,36,0.1);
+    border-radius: 12px;
+    color: var(--forest);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 400;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field input::placeholder { color: #b0b8b0; }
+  .field input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(142,186,126,0.15);
+  }
+
+  /* Error */
+  #error-msg {
+    font-size: 0.82rem; color: #c0392b;
+    background: rgba(192,57,43,0.06);
+    border: 1px solid rgba(192,57,43,0.15);
+    border-radius: 8px;
+    padding: 0 0.9rem;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: opacity 0.25s, max-height 0.25s, margin-bottom 0.25s, padding 0.15s;
+    font-weight: 400;
+    line-height: 2.2;
+  }
+  #error-msg[style*="opacity: 1"] { padding: 0.5rem 0.9rem; }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--forest);
+    border: none; border-radius: 100px;
+    color: var(--cream);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.92rem; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.02em;
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    margin-top: 0.25rem;
+    box-shadow: 0 4px 16px rgba(43,66,36,0.2);
+  }
+  .submit-btn:hover {
+    background: #3a5830;
+    box-shadow: 0 8px 24px rgba(43,66,36,0.25);
+    transform: translateY(-1px);
+  }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  .auth-footer-note {
+    text-align: center; margin-top: 1.5rem;
+    font-size: 0.78rem; color: #9ca3af; line-height: 1.6; font-weight: 300;
+  }
+  .auth-footer-note a { color: var(--sage); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ── FOOTER (minimal) ───────────────────────────────── */
+  .auth-page-footer {
+    text-align: center;
+    padding: 1.5rem;
+    font-size: 0.78rem; color: #9ca3af;
+    border-top: 1px solid rgba(43,66,36,0.06);
+    background: var(--warm-white);
+  }
+  .auth-page-footer a { color: var(--sage); text-decoration: none; }
+  .auth-page-footer a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ─────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .auth-wrapper { grid-template-columns: 1fr; }
+    .auth-left { display: none; }
+    .auth-right { padding: 3rem 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a href="index.html" class="nav-logo">
+    <img src="logo.png" alt="Brightside" class="nav-logo-img">
+    <span class="nav-brand"><span class="brand-primary">Bright</span><span class="brand-secondary">side</span></span>
+  </a>
+  <a href="index.html" class="nav-back">Back to home</a>
+</nav>
+
+<!-- MAIN -->
+<div class="auth-wrapper">
+
+  <!-- LEFT -->
+  <div class="auth-left">
+    <div class="auth-left-bg"></div>
+    <div class="auth-left-grid"></div>
+
+    <!-- Preview card -->
+    <div class="preview-card">
+      <div class="preview-card-header">
+        <span class="preview-card-title">My Financial Journey</span>
+        <span class="preview-badge">Level 3 ✦</span>
+      </div>
+      <div class="preview-items">
+        <div>
+          <div class="preview-label"><span>Budgeting Basics</span><span>78%</span></div>
+          <div class="preview-bar"><div class="preview-fill pf-1"></div></div>
+        </div>
+        <div>
+          <div class="preview-label"><span>Saving &amp; Goals</span><span>52%</span></div>
+          <div class="preview-bar"><div class="preview-fill pf-2"></div></div>
+        </div>
+        <div>
+          <div class="preview-label"><span>Investing 101</span><span>35%</span></div>
+          <div class="preview-bar"><div class="preview-fill pf-3"></div></div>
+        </div>
+      </div>
+      <div class="preview-divider"></div>
+      <div class="preview-footer">
+        <div class="preview-avatar">JS</div>
+        <div>
+          <div class="preview-user-name">Jamie S.</div>
+          <div class="preview-user-level">// STREAK · 12 DAYS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Copy -->
+    <div class="auth-left-copy">
+      <span class="auth-left-eyebrow"><span class="eyebrow-dot"></span>Free financial education</span>
+      <h2>Pick up right where<br>you <em>left off</em></h2>
+      <p>Your progress, portfolio, and curriculum are all saved to your account — sign in to keep building your financial future.</p>
+      <div class="auth-left-features">
+        <div class="feature-row"><span class="feature-icon">📈</span>Track your curriculum progress</div>
+        <div class="feature-row"><span class="feature-icon">💼</span>Manage your stock market portfolio</div>
+        <div class="feature-row"><span class="feature-icon">🎯</span>Earn certificates as you complete courses</div>
+        <div class="feature-row"><span class="feature-icon">🔒</span>100% free — always</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="auth-right">
+    <div class="auth-right-inner" id="auth-mode" data-mode="login">
+
+      <div class="tab-row">
+        <button class="tab active" onclick="setMode('login')">Sign in</button>
+        <button class="tab" onclick="setMode('signup')">Create account</button>
+      </div>
+
+      <h1 class="auth-title" id="auth-title">Welcome back</h1>
+      <p class="auth-sub" id="auth-sub">Sign in to continue your financial journey</p>
+
+      <!-- Google -->
+      <button class="google-btn" id="google-btn" data-label="Continue with Google" onclick="handleGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="divider"><span>or</span></div>
+
+      <div class="field signup-only" style="display:none">
+        <label for="full-name">Full name</label>
+        <input type="text" id="full-name" placeholder="Jane Smith" autocomplete="name"
+          onkeydown="if(event.key==='Enter') handleSubmit()">
+      </div>
+
+      <div class="field signup-only" style="display:none">
+        <label for="dob">Date of birth</label>
+        <input type="date" id="dob" autocomplete="bday">
+      </div>
+
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email"
+          onkeydown="if(event.key==='Enter') handleSubmit()">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') handleSubmit()">
+      </div>
+
+      <div id="error-msg"></div>
+
+      <button class="submit-btn" id="submit-btn" data-label="Sign in →" onclick="handleSubmit()">Sign in →</button>
+
+      <p class="auth-footer-note">
+        By continuing you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+      </p>
+
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="auth-page-footer">
+  © 2025 Brightside Finance Foundation &nbsp;·&nbsp;
+  <a href="index.html">Home</a> &nbsp;·&nbsp;
+  <a href="about.html">About</a> &nbsp;·&nbsp;
+  <a href="curriculum.html">Curriculum</a>
+</footer>
+
+<script>
+  // Nav scroll effect
+  window.addEventListener('scroll', () => {
+    document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Tab switching
+  function setMode(mode) {
+    document.getElementById('auth-mode').dataset.mode = mode;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab')[mode === 'login' ? 0 : 1].classList.add('active');
+    const isLogin = mode === 'login';
+    document.getElementById('auth-title').textContent = isLogin ? 'Welcome back' : 'Create your account';
+    document.getElementById('auth-sub').textContent   = isLogin
+      ? 'Sign in to continue your financial journey'
+      : 'Join thousands building their financial future';
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = isLogin ? 'Sign in →' : 'Create account →';
+    btn.dataset.label = btn.textContent;
+    document.getElementById('password').autocomplete = isLogin ? 'current-password' : 'new-password';
+    document.getElementById('error-msg').style.opacity = '0';
+    document.getElementById('error-msg').style.maxHeight = '0';
+    document.querySelectorAll('.signup-only').forEach(el => {
+      el.style.display = isLogin ? 'none' : 'block';
+    });
+  }
+</script>
+</body>
+</html>

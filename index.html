@@ -169,6 +169,104 @@
     .hero-stats { flex-wrap: wrap; gap: 1.5rem; }
     .impact-metrics { grid-template-columns: 1fr 1fr; }
   }
+  .nav-login-btn {
+    position: fixed;
+    top: 1rem;
+    right: 1.5rem;
+    z-index: 200;
+    height: 68px;
+    width: 144px;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 1.4rem;
+    background: var(--forest);
+    border-radius: 100px;
+    color: var(--cream) !important;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 16px rgba(43,66,36,0.18);
+    transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+  }
+  .nav-login-btn:hover {
+    background: #3a5830;
+    box-shadow: 0 8px 24px rgba(43,66,36,0.28);
+    transform: translateY(-1px);
+  }
+  @media (max-width: 900px) {
+    .nav-login-btn { display: none; }
+  }
+
+  /* ── User nav button + dropdown ── */
+  .nav-user-btn {
+    position: fixed;
+    top: 0; right: 1.5rem;
+    z-index: 200;
+    height: 72px;
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1.2rem 0 0.9rem;
+    background: var(--forest);
+    border-radius: 100px;
+    color: var(--cream) !important;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 16px rgba(43,66,36,0.18);
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, box-shadow 0.2s;
+    position: fixed;
+  }
+  .nav-user-btn:hover { background: #3a5830; box-shadow: 0 8px 24px rgba(43,66,36,0.28); }
+  .nav-user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.78rem; font-weight: 700; flex-shrink: 0;
+  }
+  .nav-user-chevron { font-size: 0.65rem; opacity: 0.7; transition: transform 0.2s; }
+  .nav-user-btn.open .nav-user-chevron { transform: rotate(180deg); }
+  .nav-dropdown {
+    position: fixed;
+    top: 76px; right: 1.5rem;
+    z-index: 199;
+    background: white;
+    border: 1px solid rgba(43,66,36,0.1);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(43,66,36,0.14);
+    min-width: 200px;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+  .nav-dropdown.open { display: flex; }
+  .nav-dropdown a, .nav-dropdown button {
+    display: block; width: 100%;
+    padding: 0.85rem 1.2rem;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    color: var(--forest); text-decoration: none;
+    background: none; border: none; text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(43,66,36,0.06);
+  }
+  .nav-dropdown a:last-child, .nav-dropdown button:last-child { border-bottom: none; }
+  .nav-dropdown a:hover, .nav-dropdown button:hover { background: rgba(43,66,36,0.04); }
+  .nav-dropdown .dropdown-logout { color: #c0392b; }
+  .nav-dropdown .dropdown-logout:hover { background: rgba(192,57,43,0.05); }
+  @media (max-width: 900px) {
+    .nav-user-btn { display: none !important; }
+    .nav-dropdown { display: none !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -184,9 +282,20 @@
     <li><a href="https://donorbox.org/brightside-finance-operations" class="nav-cta">Donate</a></li>
   </ul>
   <button class="nav-hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
-    <span></span><span></span><span></span>
-  </button>
+      <span></span><span></span><span></span>
+    </button>
 </nav>
+<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link">Log In</a>
+<button class="nav-user-btn" id="nav-user-btn" onclick="toggleDropdown()">
+  <div class="nav-user-avatar" id="nav-user-initials">?</div>
+  <span id="nav-user-name"></span>
+  <span class="nav-user-chevron">▼</span>
+</button>
+<div class="nav-dropdown" id="nav-dropdown">
+  <a href="account.html">Account Information</a>
+  <a href="settings.html">Settings</a>
+  <button class="dropdown-logout" onclick="navSignOut()">Log Out</button>
+</div>
 <div class="mobile-menu" id="mobileMenu">
   <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">✕</button>
   <a href="index.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Home</a>
@@ -195,6 +304,8 @@
   <a href="medical.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Medical Finances</a>
   <a href="course.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Courses</a>
   <a href="https://donorbox.org/brightside-finance-operations" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--primary);background:var(--secondary);padding:0.6rem 1.8rem;border-radius:100px;font-size:1rem;">Donate</a>
+  <a href="auth.html" id="mobile-login-link" onclick="document.getElementById('mobileMenu').classList.remove('open')">Log In</a>
+  <a href="account.html" id="mobile-user-link" style="display:none" onclick="document.getElementById('mobileMenu').classList.remove('open')"></a>
 </div>
 <!-- HERO -->
 <section class="hero">
@@ -310,7 +421,7 @@
       <span class="involved-icon">🤝</span>
       <div class="involved-title" style="font-family:'Playfair Display',serif;">Partner With Us</div>
       <p class="involved-desc">Bring Brightside to your school, employer, or organization with custom workshops and speaking.</p>
-      <a href="mailto:brightsidefinancefoundation@gmail.com" class="involved-btn">Become a Partner</a>
+      <a href="/cdn-cgi/l/email-protection#9efcecf7f9f6eaedf7fafbf8f7f0fff0fdfbf8f1ebf0faffeaf7f1f0def9f3fff7f2b0fdf1f3" class="involved-btn">Become a Partner</a>
     </div>
   </div>
 </section>
@@ -338,7 +449,7 @@
   <div class="footer-bottom"><span>© 2025 Brightside Finance Foundation</span><div class="footer-social"><a href="#" class="social-link">𝕏</a><a href="#" class="social-link">in</a><a href="#" class="social-link">f</a><a href="#" class="social-link">▶</a></div></div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   const reveals = document.querySelectorAll('.reveal');
   const obs = new IntersectionObserver(entries => entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }), {threshold:0.12});
   reveals.forEach(el => obs.observe(el));
@@ -352,9 +463,4 @@
   });
   // Mark active page
   var page = location.pathname.split('/').pop() || 'index.html';
-  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course'};
-  if(map[page]){ var el=document.getElementById(map[page]); if(el) el.classList.add('active'); }
-})();
-</script>
-</body>
-</html>
+  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'n
