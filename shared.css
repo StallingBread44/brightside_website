@@ -160,6 +160,11 @@ nav.scrolled {
 .reveal-delay-4 { transition-delay: 0.4s; }
 .reveal-delay-5 { transition-delay: 0.5s; }
 
+/* Fallback: if JS hasn't run or animations are disabled, always show reveal elements */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
 /* ── FOOTER ── */
 footer { background: var(--primary-dark); color: rgba(201,204,180,0.75); padding: 4rem 4rem 2rem; }
 .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
@@ -216,3 +221,15 @@ section { padding: 6rem 4rem; }
 .brand-primary  { color: var(--secondary); }
 .brand-secondary { color: #8eba7e; }
 
+
+/* ── REVEAL OBSERVER (inline fallback note) ──
+   The following script must exist somewhere in your HTML pages:
+
+   <script>
+     const observer = new IntersectionObserver(
+       entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+       { threshold: 0.1 }
+     );
+     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+   </script>
+*/
