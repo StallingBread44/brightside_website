@@ -23,7 +23,7 @@
                       linear-gradient(90deg, rgba(43,66,36,0.04) 1px, transparent 1px);
     background-size: 60px 60px;
   }
-  .hero-content { position: relative; z-index: 1; animation: fadeUp 0.8s 0.3s ease both; }
+  .hero-content { position: relative; z-index: 1; animation: fadeUp 0.8s 0.3s ease forwards; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
   .hero-eyebrow {
@@ -51,7 +51,7 @@
   .stat-label { font-size: 0.82rem; color: #6b7280; font-weight: 500; }
 
   /* DASHBOARD VISUAL */
-  .hero-visual { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; animation: fadeUp 0.8s 0.5s ease both; padding-right: 3rem; }
+  .hero-visual { position: relative; z-index: 1; display: flex; justify-content: center; align-items: center; animation: fadeUp 0.8s 0.5s ease forwards; padding-right: 3rem; }
   .dashboard-card { background: white; border-radius: 24px; padding: 2rem; width: 380px; box-shadow: 0 24px 80px rgba(43,66,36,0.12), 0 4px 16px rgba(0,0,0,0.06); position: relative; }
   .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
   .card-title { font-weight: 700; font-size: 0.95rem; color: var(--forest); }
@@ -154,7 +154,7 @@
 
   @media (max-width: 900px) {
     .hero { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
-    .hero-visual { display: none; }
+    .hero-visual { display: flex; justify-content: center; padding-right: 0; margin-top: 2rem; }
     .programs-grid { grid-template-columns: 1fr 1fr; }
     .impact-inner { grid-template-columns: 1fr; gap: 2.5rem; }
     .steps-container { grid-template-columns: 1fr 1fr; }
@@ -522,4 +522,13 @@
 
   // Dark mode init
   if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+    }),
+    { threshold: 0.1 }
+  );
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
