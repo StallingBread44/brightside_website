@@ -30,8 +30,9 @@
   html.dark nav   { background: rgba(26,31,26,0.95); border-bottom-color: rgba(142,186,126,0.1); }
   html.dark .mobile-menu { background: #1a1f1a; }
   html.dark footer { background: #111511; border-top-color: rgba(142,186,126,0.1); }
-  html.dark .nav-login-btn { background: var(--sage); color: #1a1f1a !important; }
-  html.dark .nav-user-btn  { background: var(--sage); color: #1a1f1a !important; }
+  html.dark .nav-login-btn { background: #3a5830; }
+  html.dark .nav-user-btn  { background: #3a5830; }
+  html.dark .nav-user-btn:hover { background: #4a6840; }
   html.dark .nav-dropdown  { background: var(--card-bg); border-color: var(--border-col); }
   html.dark .nav-dropdown a,
   html.dark .nav-dropdown button { color: var(--text-primary); border-color: var(--border-col); }
@@ -65,12 +66,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 1.4rem;
+    padding: 0 1.5rem;
     background: var(--forest);
     border-radius: 0 0 20px 20px;
     color: var(--cream) !important;
     font-family: 'DM Sans', sans-serif;
-    font-weight: 700; font-size: 0.88rem;
+    font-weight: 700; font-size: 1rem;
     text-decoration: none; letter-spacing: 0.01em;
     box-shadow: 0 4px 16px rgba(43,66,36,0.15);
     transition: background 0.2s, box-shadow 0.2s;
@@ -85,12 +86,12 @@
     display: none;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 1.2rem 0 0.9rem;
+    padding: 0 1.5rem;
     background: var(--forest);
     border-radius: 0 0 20px 20px;
     color: var(--cream) !important;
     font-family: 'DM Sans', sans-serif;
-    font-weight: 700; font-size: 0.88rem;
+    font-weight: 700; font-size: 1rem;
     letter-spacing: 0.01em;
     box-shadow: 0 4px 16px rgba(43,66,36,0.15);
     cursor: pointer; border: none;
@@ -108,19 +109,19 @@
   .nav-user-btn.open .nav-user-chevron { transform: rotate(180deg); }
   .nav-dropdown {
     position: fixed;
-    top: 72px; right: 1.5rem;
+    top: 68px; right: 2.2rem;
     z-index: 199;
     background: white;
     border: 1px solid rgba(43,66,36,0.1);
     border-radius: 0 0 14px 14px;
     box-shadow: 0 12px 40px rgba(43,66,36,0.12);
-    min-width: 180px; overflow: hidden;
+    min-width: 150px; overflow: hidden;
     display: none; flex-direction: column;
   }
   .nav-dropdown.open { display: flex; }
   .nav-dropdown a, .nav-dropdown button {
-    display: block; width: 100%; padding: 0.75rem 1.1rem;
-    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+    display: block; width: 100%; padding: 0.8rem 0.4rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
     color: var(--forest); text-decoration: none;
     background: none; border: none; text-align: left;
     cursor: pointer; transition: background 0.15s;
@@ -290,6 +291,101 @@
   }
   .btn-danger-outline:hover { background: rgba(192,57,43,0.06); border-color: #c0392b; }
 
+
+  /* ── Avatar upload ── */
+  .profile-avatar-wrap {
+    position: relative; flex-shrink: 0; cursor: pointer;
+  }
+  .profile-avatar-wrap:hover .avatar-overlay { opacity: 1; }
+  .profile-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: var(--forest);
+    color: var(--cream);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem; font-weight: 900;
+    overflow: hidden; flex-shrink: 0;
+    transition: opacity 0.2s;
+  }
+  .profile-avatar img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 50%;
+  }
+  html.dark .profile-avatar { background: #3a5830; }
+  .avatar-overlay {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .avatar-overlay-icon {
+    color: white; font-size: 1.3rem; line-height: 1;
+  }
+  .avatar-upload-input { display: none; }
+  .avatar-uploading {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    display: none; align-items: center; justify-content: center;
+    color: white; font-size: 0.7rem; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    text-align: center; padding: 0.3rem;
+  }
+  .avatar-uploading.active { display: flex; }
+
+
+  /* ── Crop modal ── */
+  .crop-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.75);
+    align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .crop-modal-box {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 1.8rem;
+    width: 100%; max-width: 360px;
+    display: flex; flex-direction: column; gap: 1.2rem;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+  }
+  .crop-modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem; font-weight: 900;
+    color: var(--text-primary);
+  }
+  .crop-modal-hint {
+    font-size: 0.78rem; color: var(--text-muted); margin-top: -0.6rem;
+    font-weight: 300;
+  }
+  #crop-canvas {
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    display: block; margin: 0 auto;
+    cursor: grab; touch-action: none;
+    background: #111;
+  }
+  #crop-canvas:active { cursor: grabbing; }
+  .crop-scale-row {
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .crop-scale-row label {
+    font-size: 0.75rem; color: var(--text-muted);
+    font-weight: 600; white-space: nowrap;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .crop-scale-row input[type=range] {
+    flex: 1; accent-color: var(--forest);
+  }
+  #crop-scale-val {
+    font-size: 0.78rem; color: var(--text-muted);
+    font-family: 'DM Mono', monospace; min-width: 36px; text-align: right;
+  }
+  .crop-actions {
+    display: flex; gap: 0.75rem; justify-content: flex-end;
+  }
+
 </style>
 </head>
 <body>
@@ -343,10 +439,20 @@
 
   <!-- Avatar + name hero -->
   <div class="profile-hero">
-    <div class="profile-avatar" id="profile-avatar">?</div>
+    <div class="profile-avatar-wrap" onclick="document.getElementById('avatar-upload-input').click()" title="Change photo">
+      <div class="profile-avatar" id="profile-avatar">?</div>
+      <div class="avatar-overlay">
+        <span class="avatar-overlay-icon">✎</span>
+      </div>
+      <div class="avatar-uploading" id="avatar-uploading">Saving…</div>
+      <input type="file" id="avatar-upload-input" class="avatar-upload-input"
+             accept="image/jpeg,image/png,image/webp,image/gif"
+             onchange="handleAvatarUpload(event)">
+    </div>
     <div class="profile-hero-info">
       <div class="profile-hero-name" id="profile-hero-name">Loading…</div>
       <div class="profile-hero-email" id="profile-hero-email"></div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.3rem;font-weight:300;">Click photo to change</div>
     </div>
   </div>
 
@@ -430,9 +536,11 @@
 
 <!-- Firebase -->
 <script type="module">
-  import { initializeApp }                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut, updateEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc }      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut, updateEmail, updateProfile }
+                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc }
+                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const app  = initializeApp({
     apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
@@ -455,21 +563,45 @@
     return new Date(y,m-1,d).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
   }
 
+  // ── Apply avatar everywhere on this page ─────────────────────────
+  function applyAvatar(photoURL, navName) {
+    // Big profile avatar
+    const pa = document.getElementById('profile-avatar');
+    if (photoURL) {
+      pa.innerHTML = `<img src="${photoURL}" alt="Profile photo">`;
+    } else {
+      pa.textContent = initials(navName);
+    }
+    // Nav avatar circle
+    const na = document.getElementById('nav-user-initials');
+    if (na) {
+      if (photoURL) {
+        na.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      } else {
+        na.textContent = initials(navName).slice(0,1);
+      }
+    }
+  }
+
   // ── Populate profile UI ──────────────────────────────────────────
   function populateProfile(user, fsData) {
-    const name  = fsData?.name  || user.displayName || '';
-    const email = user.email    || '';
-    const dob   = fsData?.dob   || '';
+    const name     = fsData?.name     || user.displayName || '';
+    const email    = user.email       || '';
+    const dob      = fsData?.dob      || '';
+    const photoURL = fsData?.photoURL || user.photoURL || '';
 
-    // Nav
     const navName = name || email.split('@')[0];
+
+    // Nav text
     const navUserName = document.getElementById('nav-user-name');
     if (navUserName) navUserName.textContent = navName;
 
-    // Hero
-    document.getElementById('profile-avatar').textContent    = initials(navName);
-    document.getElementById('profile-hero-name').textContent = name  || '—';
-    document.getElementById('profile-hero-email').textContent= email || '—';
+    // Avatars
+    applyAvatar(photoURL, navName);
+
+    // Hero text
+    document.getElementById('profile-hero-name').textContent  = name  || '—';
+    document.getElementById('profile-hero-email').textContent = email || '—';
 
     // View rows
     document.getElementById('view-name').textContent  = name  || '—';
@@ -490,12 +622,11 @@
     const mobileUser  = document.getElementById('mobile-user-link');
 
     if (user) {
-      if (loginBtn)    loginBtn.style.display  = 'none';
-      if (userBtn)     userBtn.style.display   = 'inline-flex';
+      if (loginBtn)    loginBtn.style.display    = 'none';
+      if (userBtn)     userBtn.style.display     = 'inline-flex';
       if (mobileLogin) mobileLogin.style.display = 'none';
       if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = user.displayName || user.email.split('@')[0]; }
 
-      // Fetch Firestore profile
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         populateProfile(user, snap.exists() ? snap.data() : {});
@@ -503,7 +634,6 @@
         populateProfile(user, {});
       }
     } else {
-      // Not logged in — redirect
       window.location.href = 'auth.html';
     }
   });
@@ -514,15 +644,163 @@
     window.location.href = 'index.html';
   };
 
-  // ── Enter edit mode ──────────────────────────────────────────────
+  // ── Avatar: open crop modal when file chosen ────────────────────
+  let _cropImg = null, _cropScale = 1, _cropX = 0, _cropY = 0,
+      _dragStart = null, _imgNaturalW = 0, _imgNaturalH = 0;
+
+  window.handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('Please choose an image under 5 MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => openCropModal(ev.target.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // _baseScale = scale at which image fits entirely in canvas (slider 0%)
+  // _cropScale = actual draw scale = _baseScale * zoom multiplier
+  let _baseScale = 1;
+
+  function openCropModal(src) {
+    _cropImg = new Image();
+    _cropImg.onload = () => {
+      _imgNaturalW = _cropImg.naturalWidth;
+      _imgNaturalH = _cropImg.naturalHeight;
+
+      const SIZE = 280; // canvas size
+      // Fit entire image inside canvas at 0% zoom
+      _baseScale = Math.min(SIZE / _imgNaturalW, SIZE / _imgNaturalH);
+      _cropScale = _baseScale;
+
+      // Centre the image
+      _cropX = (SIZE - _imgNaturalW * _cropScale) / 2;
+      _cropY = (SIZE - _imgNaturalH * _cropScale) / 2;
+
+      document.getElementById('crop-modal').style.display = 'flex';
+      document.getElementById('crop-scale-slider').value = 0;
+      document.getElementById('crop-scale-val').textContent = '0%';
+      requestAnimationFrame(drawCrop);
+    };
+    _cropImg.src = src;
+  }
+
+  function drawCrop() {
+    const canvas = document.getElementById('crop-canvas');
+    const SIZE = canvas.width;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, SIZE, SIZE);
+
+    // Draw image scaled + offset
+    const drawW = _imgNaturalW * _cropScale;
+    const drawH = _imgNaturalH * _cropScale;
+    ctx.drawImage(_cropImg, _cropX, _cropY, drawW, drawH);
+
+    // Circular mask
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.beginPath();
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // Dim outside circle
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.restore();
+
+    // Circle border guide
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 1, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Drag to reposition
+  const _cropCanvas = () => document.getElementById('crop-canvas');
+  document.addEventListener('mousedown', e => {
+    if (e.target !== _cropCanvas()) return;
+    _dragStart = { x: e.clientX - _cropX, y: e.clientY - _cropY };
+  });
+  document.addEventListener('mousemove', e => {
+    if (!_dragStart) return;
+    _cropX = e.clientX - _dragStart.x;
+    _cropY = e.clientY - _dragStart.y;
+    drawCrop();
+  });
+  document.addEventListener('mouseup', () => { _dragStart = null; });
+
+  // Touch drag
+  document.addEventListener('touchstart', e => {
+    if (e.target !== _cropCanvas()) return;
+    const t = e.touches[0];
+    _dragStart = { x: t.clientX - _cropX, y: t.clientY - _cropY };
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!_dragStart || e.target !== _cropCanvas()) return;
+    const t = e.touches[0];
+    _cropX = t.clientX - _dragStart.x;
+    _cropY = t.clientY - _dragStart.y;
+    drawCrop();
+  }, { passive: true });
+  document.addEventListener('touchend', () => { _dragStart = null; });
+
+  window.onCropScale = (val) => {
+    const prev = _cropScale;
+    // 0% = fit whole image, 100% = 3x baseScale (good zoom for portraits)
+    _cropScale = _baseScale * (1 + (val / 100) * 2);
+    // Zoom from centre of canvas
+    const SIZE = _cropCanvas().width;
+    _cropX = SIZE/2 - (_cropScale / prev) * (SIZE/2 - _cropX);
+    _cropY = SIZE/2 - (_cropScale / prev) * (SIZE/2 - _cropY);
+    document.getElementById('crop-scale-val').textContent = val + '%';
+    drawCrop();
+  };
+
+  window.closeCropModal = () => {
+    document.getElementById('crop-modal').style.display = 'none';
+  };
+
+  window.applyCrop = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const loader = document.getElementById('avatar-uploading');
+    const saveBtn = document.getElementById('crop-save-btn');
+
+    document.getElementById('crop-modal').style.display = 'none';
+    loader.classList.add('active');
+    saveBtn.disabled = true;
+
+    try {
+      // Export the canvas as JPEG
+      const canvas = document.getElementById('crop-canvas');
+      const base64 = canvas.toDataURL('image/jpeg', 0.88);
+
+      await setDoc(doc(db, 'users', user.uid), { photoURL: base64 }, { merge: true });
+      await updateProfile(user, { photoURL: base64 });
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      populateProfile(user, snap.exists() ? snap.data() : {});
+    } catch(err) {
+      console.error('Avatar save failed:', err);
+      alert('Failed to save photo. Please try again.');
+    } finally {
+      loader.classList.remove('active');
+      saveBtn.disabled = false;
+    }
+  };
+
+  // ── Enter / cancel edit ──────────────────────────────────────────
   window.enterEdit = () => {
     document.getElementById('view-mode').style.display = 'none';
     document.getElementById('edit-mode').style.display = '';
     document.getElementById('account-error').textContent   = '';
     document.getElementById('account-success').textContent = '';
   };
-
-  // ── Cancel edit ──────────────────────────────────────────────────
   window.cancelEdit = () => {
     document.getElementById('edit-mode').style.display = 'none';
     document.getElementById('view-mode').style.display = '';
@@ -542,28 +820,17 @@
 
     if (!name || !email) { errEl.textContent = 'Name and email are required.'; return; }
 
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-    errEl.textContent = '';
-    okEl.textContent  = '';
+    btn.disabled = true; btn.textContent = 'Saving…';
+    errEl.textContent = ''; okEl.textContent = '';
 
     try {
-      // Update Firebase Auth display name
       await updateProfile(user, { displayName: name });
-
-      // Update email if changed (requires recent login — catch gracefully)
-      if (email !== user.email) {
-        await updateEmail(user, email);
-      }
-
-      // Update Firestore
+      if (email !== user.email) await updateEmail(user, email);
       await setDoc(doc(db, 'users', user.uid), { name, email, dob }, { merge: true });
-
-      // Refresh UI
-      populateProfile(auth.currentUser, { name, email, dob });
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      populateProfile(auth.currentUser, snap.exists() ? snap.data() : {});
       okEl.textContent = 'Profile updated successfully.';
       setTimeout(() => window.cancelEdit(), 1200);
-
     } catch(e) {
       const msgs = {
         'auth/requires-recent-login': 'Please sign out and sign back in to change your email.',
@@ -572,8 +839,7 @@
       };
       errEl.textContent = msgs[e.code] || 'Something went wrong. Please try again.';
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Save changes';
+      btn.disabled = false; btn.textContent = 'Save changes';
     }
   };
 </script>
@@ -583,20 +849,48 @@
     document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 40);
   });
 
+  // Apply dark mode immediately
+  if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+
+  // ── Dropdown: toggle on button click, close on outside click ──
   function toggleDropdown() {
-    document.getElementById('nav-user-btn').classList.toggle('open');
-    document.getElementById('nav-dropdown').classList.toggle('open');
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    btn.classList.toggle('open');
+    dd.classList.toggle('open');
   }
   document.addEventListener('click', e => {
     const btn = document.getElementById('nav-user-btn');
     const dd  = document.getElementById('nav-dropdown');
-    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
-      btn.classList.remove('open'); dd.classList.remove('open');
+    if (!btn || !dd) return;
+    // Only close if click is outside BOTH the button and the dropdown
+    if (!btn.contains(e.target) && !dd.contains(e.target)) {
+      btn.classList.remove('open');
+      dd.classList.remove('open');
     }
   });
-
-  // Apply dark mode if set
-  if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
 </script>
+
+<!-- Crop modal -->
+<div class="crop-modal" id="crop-modal">
+  <div class="crop-modal-box">
+    <div>
+      <div class="crop-modal-title">Crop your photo</div>
+      <div class="crop-modal-hint">Drag to reposition · Use the slider to zoom</div>
+    </div>
+    <canvas id="crop-canvas" width="280" height="280"></canvas>
+    <div class="crop-scale-row">
+      <label>Zoom</label>
+      <input type="range" id="crop-scale-slider" min="0" max="100" value="0"
+             oninput="onCropScale(this.value)">
+      <span id="crop-scale-val">100%</span>
+    </div>
+    <div class="crop-actions">
+      <button class="btn-cancel" onclick="closeCropModal()">Cancel</button>
+      <button class="btn-save" id="crop-save-btn" onclick="applyCrop()">Save photo</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

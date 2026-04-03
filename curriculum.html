@@ -87,12 +87,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 1.4rem;
+    padding: 0 1.5rem;
     background: var(--forest);
     border-radius: 0 0 20px 20px;
     color: var(--cream) !important;
     font-family: 'DM Sans', sans-serif;
-    font-weight: 700; font-size: 0.88rem;
+    font-weight: 700; font-size: 1rem;
     text-decoration: none; letter-spacing: 0.01em;
     box-shadow: 0 4px 16px rgba(43,66,36,0.15);
     transition: background 0.2s, box-shadow 0.2s;
@@ -107,12 +107,12 @@
     display: none;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 1.2rem 0 0.9rem;
+    padding: 0 1.5rem;
     background: var(--forest);
     border-radius: 0 0 20px 20px;
     color: var(--cream) !important;
     font-family: 'DM Sans', sans-serif;
-    font-weight: 700; font-size: 0.88rem;
+    font-weight: 700; font-size: 1rem;
     letter-spacing: 0.01em;
     box-shadow: 0 4px 16px rgba(43,66,36,0.15);
     cursor: pointer; border: none;
@@ -130,19 +130,19 @@
   .nav-user-btn.open .nav-user-chevron { transform: rotate(180deg); }
   .nav-dropdown {
     position: fixed;
-    top: 72px; right: 1.5rem;
+    top: 68px; right: 2.2rem;
     z-index: 199;
     background: white;
     border: 1px solid rgba(43,66,36,0.1);
     border-radius: 0 0 14px 14px;
     box-shadow: 0 12px 40px rgba(43,66,36,0.12);
-    min-width: 180px; overflow: hidden;
+    min-width: 150px; overflow: hidden;
     display: none; flex-direction: column;
   }
   .nav-dropdown.open { display: flex; }
   .nav-dropdown a, .nav-dropdown button {
-    display: block; width: 100%; padding: 0.75rem 1.1rem;
-    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+    display: block; width: 100%; padding: 0.8rem 0.4rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500;
     color: var(--forest); text-decoration: none;
     background: none; border: none; text-align: left;
     cursor: pointer; transition: background 0.15s;
@@ -169,6 +169,7 @@
   html.dark .mobile-close { color: #c8dfc0; }
   html.dark .nav-login-btn { background: #3a5830; }
   html.dark .nav-user-btn  { background: #3a5830; }
+  html.dark .nav-user-btn:hover {background-color:rgb(73, 93, 68);}
   html.dark .nav-dropdown  { background: #242924; border-color: rgba(142,186,126,0.12); }
   html.dark .nav-dropdown a, html.dark .nav-dropdown button { color: #e8f0e0; border-color: rgba(142,186,126,0.08); }
   html.dark .nav-dropdown a:hover, html.dark .nav-dropdown button:hover { background: rgba(142,186,126,0.08); }
@@ -514,31 +515,55 @@
 
 <!-- Firebase auth for nav -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut }
+                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc }
+                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const app  = initializeApp({
-  apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
-  authDomain: "website-bs-fbeab.firebaseapp.com",
-  projectId: "website-bs-fbeab",
-  storageBucket: "website-bs-fbeab.firebasestorage.app",
-  messagingSenderId: "995737362868",
-  appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
-});
+    apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
+    authDomain: "website-bs-fbeab.firebaseapp.com",
+    projectId: "website-bs-fbeab",
+    storageBucket: "website-bs-fbeab.firebasestorage.app",
+    messagingSenderId: "995737362868",
+    appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
+  });
   const auth = getAuth(app);
+  const db   = getFirestore(app);
 
-  onAuthStateChanged(auth, user => {
+  function setNavAvatar(photoURL, name) {
+    const el = document.getElementById('nav-user-initials');
+    if (!el) return;
+    if (photoURL) {
+      el.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      el.textContent = name ? name.charAt(0).toUpperCase() : '?';
+    }
+  }
+
+  onAuthStateChanged(auth, async user => {
     const loginBtn    = document.getElementById('nav-login-btn-link');
     const userBtn     = document.getElementById('nav-user-btn');
     const userNameEl  = document.getElementById('nav-user-name');
     const mobileLogin = document.getElementById('mobile-login-link');
     const mobileUser  = document.getElementById('mobile-user-link');
+
     if (user) {
       const name = user.displayName || user.email.split('@')[0];
       if (loginBtn)    loginBtn.style.display  = 'none';
-      if (userBtn)     { userBtn.style.display = 'inline-flex'; userNameEl.textContent = name; }
+      if (userBtn)     { userBtn.style.display = 'inline-flex'; if (userNameEl) userNameEl.textContent = name; }
       if (mobileLogin) mobileLogin.style.display = 'none';
       if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
+
+      // Fetch photo from Firestore
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const photoURL = snap.exists() ? snap.data()?.photoURL : null;
+        setNavAvatar(photoURL || user.photoURL, name);
+      } catch {
+        setNavAvatar(user.photoURL, name);
+      }
     } else {
       if (loginBtn)    loginBtn.style.display  = '';
       if (userBtn)     userBtn.style.display   = 'none';
