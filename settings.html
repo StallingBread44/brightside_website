@@ -35,9 +35,9 @@
   html.dark .setting-label { color: var(--text-primary); }
   html.dark .setting-desc  { color: var(--text-muted); }
   html.dark footer          { background: #111511; border-top-color: rgba(142,186,126,0.1); }
-  html.dark .nav-login-btn  { background: #3a5830; }
-  html.dark .nav-user-btn   { background: #3a5830; }
-  html.dark .nav-user-btn:hover { background: #4a6840; }
+  html.dark .nav-login-btn { background: #3a5830; }
+  html.dark .nav-user-btn  { background: #3a5830; }
+  html.dark .nav-user-btn:hover {background-color:rgb(73, 93, 68);}
   html.dark .nav-dropdown   { background: var(--card-bg); border-color: var(--border-col); }
   html.dark .nav-dropdown a,
   html.dark .nav-dropdown button { color: var(--text-primary); border-color: var(--border-col); }
@@ -146,6 +146,7 @@
     z-index: 200;
     height: 72px;
     display: none;
+    min-width: 180px;
     align-items: center;
     gap: 0.5rem;
     padding: 0 1.5rem;
@@ -349,24 +350,63 @@
 </script>
 
 <script>
-  // Nav scroll
-  window.addEventListener('scroll', () => {
-    document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 40);
-  });
+  function positionDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
 
-  // Dropdown
-  function toggleDropdown() {
-    document.getElementById('nav-user-btn').classList.toggle('open');
-    document.getElementById('nav-dropdown').classList.toggle('open');
+    if (!btn || !dd) return;
+
+    const rect = btn.getBoundingClientRect();
+
+    dd.style.position = 'fixed';
+    dd.style.left = rect.left + rect.width / 2 + 'px';
+    dd.style.top = rect.bottom + 'px';
+    dd.style.transform = 'translateX(-50%)';
   }
+
+  function toggleDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+
+    btn.classList.toggle('open');
+    dd.classList.toggle('open');
+
+    if (dd.classList.contains('open')) {
+      positionDropdown();
+    }
+  }
+
+  // Close on outside click
   document.addEventListener('click', e => {
     const btn = document.getElementById('nav-user-btn');
     const dd  = document.getElementById('nav-dropdown');
+
     if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
-      btn.classList.remove('open'); dd.classList.remove('open');
+      btn.classList.remove('open');
+      dd.classList.remove('open');
     }
   });
 
+  // Keep dropdown aligned on resize
+  window.addEventListener('resize', positionDropdown);
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    }),
+    { threshold: 0.1 }
+  );
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+
+
+
+<script>
   // ── Dark mode logic ──
   const toggle = document.getElementById('dark-mode-toggle');
 
@@ -383,5 +423,6 @@
     localStorage.setItem('darkMode', isDark);
   });
 </script>
+
 </body>
 </html>

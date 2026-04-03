@@ -126,6 +126,7 @@
     z-index: 200;
     height: 72px;
     display: none;
+    min-width: 180px;
     align-items: center;
     gap: 0.5rem;
     padding: 0 1.5rem;
@@ -583,26 +584,64 @@
     window.location.href = 'index.html';
   };
 </script>
-
 <script>
+  function positionDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+
+    if (!btn || !dd) return;
+
+    const rect = btn.getBoundingClientRect();
+
+    dd.style.position = 'fixed';
+    dd.style.left = rect.left + rect.width / 2 + 'px';
+    dd.style.top = rect.bottom + 'px';
+    dd.style.transform = 'translateX(-50%)';
+  }
+
   function toggleDropdown() {
     const btn = document.getElementById('nav-user-btn');
     const dd  = document.getElementById('nav-dropdown');
+
     btn.classList.toggle('open');
     dd.classList.toggle('open');
+
+    if (dd.classList.contains('open')) {
+      positionDropdown();
+    }
   }
+
   // Close on outside click
   document.addEventListener('click', e => {
     const btn = document.getElementById('nav-user-btn');
     const dd  = document.getElementById('nav-dropdown');
+
     if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
       btn.classList.remove('open');
       dd.classList.remove('open');
     }
   });
 
+  // Keep dropdown aligned on resize
+  window.addEventListener('resize', positionDropdown);
+
   // Dark mode init
-  if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.documentElement.classList.add('dark');
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(
+    entries => entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    }),
+    { threshold: 0.1 }
+  );
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 </script>
 </body>
 </html>
