@@ -451,6 +451,75 @@ const firebaseConfig = {
     .auth-left { display: none; }
     .auth-right { padding: 3rem 2rem; }
   }
+
+  /* ── Dark mode ── */
+  html.dark body { background: #1a1f1a; color: #e8f0e0; }
+
+  html.dark nav {
+    background: rgba(26,31,26,0.96) !important;
+    border-bottom-color: rgba(142,186,126,0.1) !important;
+  }
+  html.dark .brand-primary { color: #c8dfc0; }
+  html.dark .nav-back { color: #8fa887; }
+  html.dark .nav-back:hover { color: #c8dfc0; }
+
+  html.dark .auth-right {
+    background: #1e241e;
+  }
+  html.dark .auth-right-inner { color: #e8f0e0; }
+
+  html.dark .tab-row { border-bottom-color: rgba(142,186,126,0.12); }
+  html.dark .tab { color: #8fa887; }
+  html.dark .tab.active { color: #e8f0e0; border-bottom-color: var(--sage); }
+  html.dark .tab:hover:not(.active) { color: #e8f0e0; }
+
+  html.dark .auth-title { color: #e8f0e0; }
+  html.dark .auth-sub   { color: #8fa887; }
+
+  html.dark .google-btn {
+    background: #242924;
+    border-color: rgba(142,186,126,0.18);
+    color: #e8f0e0;
+    box-shadow: none;
+  }
+  html.dark .google-btn:hover {
+    border-color: rgba(142,186,126,0.4);
+    background: #2e352e;
+    box-shadow: none;
+  }
+
+  html.dark .divider::before,
+  html.dark .divider::after { background: rgba(142,186,126,0.12); }
+  html.dark .divider span { color: #6b7d65; }
+
+  html.dark .field label { color: #a8cc98; opacity: 1; }
+  html.dark .field input {
+    background: #242924;
+    border-color: rgba(142,186,126,0.15);
+    color: #e8f0e0;
+  }
+  html.dark .field input::placeholder { color: #4a5e4a; }
+  html.dark .field input:focus {
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(142,186,126,0.1);
+  }
+
+  html.dark .submit-btn {
+    background: #3a5830;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+  html.dark .submit-btn:hover { background: #4a6840; }
+
+  html.dark .auth-footer-note { color: #6b7d65; }
+  html.dark .auth-footer-note a { color: var(--sage); }
+
+  html.dark .auth-page-footer {
+    background: #111511;
+    border-top-color: rgba(142,186,126,0.08);
+    color: #6b7d65;
+  }
+  html.dark .auth-page-footer a { color: #8fa887; }
+
 </style>
 </head>
 <body>
@@ -585,6 +654,9 @@ const firebaseConfig = {
 </footer>
 
 <script>
+  // Apply dark mode immediately from localStorage
+  if (localStorage.getItem('darkMode') === 'true') document.documentElement.classList.add('dark');
+
   // Nav scroll effect
   window.addEventListener('scroll', () => {
     document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
