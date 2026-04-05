@@ -619,6 +619,46 @@
   // Keep dropdown aligned on resize
   window.addEventListener('resize', positionDropdown);
 
+  // ── Shrink nav right side to avoid overlap with login/user button ──
+  function adjustNavRight() {
+    const nav = document.getElementById('mainNav');
+    const loginBtn = document.getElementById('nav-login-btn-link');
+    const userBtn  = document.getElementById('nav-user-btn');
+
+    if (!nav) return;
+
+    // Only apply above the mobile breakpoint (>900px)
+    if (window.innerWidth <= 900) {
+      nav.style.paddingRight = '';
+      return;
+    }
+
+    // Measure whichever auth button is currently visible
+    const authBtn = (userBtn && userBtn.style.display !== 'none') ? userBtn : loginBtn;
+    if (!authBtn) return;
+
+    const btnRect = authBtn.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+
+    // Space the nav needs to leave on the right = from nav's right edge to auth button's left edge + a small buffer
+    const overlap = navRect.right - btnRect.left;
+    const basePadding = 16; // minimum right padding in px
+
+    if (overlap > 0) {
+      nav.style.paddingRight = (overlap + basePadding) + 'px';
+    } else {
+      nav.style.paddingRight = basePadding + 'px';
+    }
+  }
+
+  // Run on load and every resize
+  adjustNavRight();
+  window.addEventListener('resize', adjustNavRight);
+
+  // Re-run after Firebase sets the auth button visibility (small delay)
+  setTimeout(adjustNavRight, 500);
+  setTimeout(adjustNavRight, 1500);
+
   // Dark mode init
   if (localStorage.getItem('darkMode') === 'true') {
     document.documentElement.classList.add('dark');
