@@ -1,0 +1,4 @@
+yfinance
+firebase-admin
+pandas
+lxml
