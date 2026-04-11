@@ -5,6 +5,7 @@ from firebase_admin import firestore
 import pandas as pd
 import time
 import os
+import requests
 
 # ---------------------------------------------------------
 # CONFIG
@@ -25,7 +26,9 @@ except Exception as e:
 
 def get_top_tickers():
     url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-    tables = pd.read_html(url)
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    html = requests.get(url, headers=headers).text
+    tables = pd.read_html(html)
     df = tables[0]
     tickers = df['Symbol'].str.replace('.', '-').tolist()
     return tickers

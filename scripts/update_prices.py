@@ -5,6 +5,7 @@ from firebase_admin import firestore
 import pandas as pd
 import time
 import os
+import requests
 
 # ---------------------------------------------------------
 # CONSTANTS & CONFIG
@@ -36,7 +37,9 @@ def get_top_tickers():
     print("Fetching top 500 tickers from Wikipedia (S&P 500)...")
     try:
         url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
-        tables = pd.read_html(url)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        html = requests.get(url, headers=headers).text
+        tables = pd.read_html(html)
         df = tables[0]
         # Replace dots with hyphens for yfinance (e.g. BRK.B -> BRK-B)
         tickers = df['Symbol'].str.replace('.', '-').tolist()
