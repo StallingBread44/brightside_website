@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brightside — Stock Market Simulator</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* ── GAME LAYOUT ── */
+  .game-container {
+    min-height: 100vh;
+    padding: 8rem 4rem 4rem;
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+    z-index: 1;
+  }
+  
+  .game-bg {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 70% 60% at 70% 50%, rgba(142,186,126,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 20% 80%, rgba(168,172,148,0.04) 0%, transparent 60%);
+  }
+
+  /* ── DASHBOARD BLOCKS ── */
+  .game-panel {
+    background: white;
+    border-radius: 20px;
+    border: 1px solid rgba(43,66,36,0.08);
+    padding: 2rem;
+    box-shadow: 0 12px 40px rgba(43,66,36,0.05);
+    margin-bottom: 2rem;
+  }
+
+  .panel-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--forest);
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* PORTFOLIO STATS */
+  .stat-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;
+  }
+  .stat-box {
+    background: rgba(43,66,36,0.04);
+    padding: 1.2rem;
+    border-radius: 12px;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--sage);
+    text-transform: uppercase; margin-bottom: 0.5rem; display: block;
+  }
+  .stat-value {
+    font-family: 'DM Sans', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--forest);
+  }
+  .stat-change { font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; display: block; }
+  .pos-change { color: #2e7d32; }
+  .neg-change { color: #d32f2f; }
+
+  /* PORTFOLIO TABLE */
+  .portfolio-table {
+    width: 100%; border-collapse: collapse; text-align: left;
+  }
+  .portfolio-table th {
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: #9ca3af;
+    text-transform: uppercase; padding-bottom: 1rem; border-bottom: 1px solid rgba(43,66,36,0.1);
+  }
+  .portfolio-table td {
+    padding: 1rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); font-size: 0.95rem; font-weight: 500; color: var(--forest);
+  }
+  .portfolio-table tr:last-child td { border-bottom: none; }
+  .ticker-cell { font-weight: 700; display: flex; flex-direction: column; }
+  .ticker-name { font-size: 0.75rem; color: #9ca3af; font-weight: 400; }
+
+  /* TRADE PANEL */
+  .search-wrapper { position: relative; margin-bottom: 1.5rem; }
+  .search-input {
+    width: 100%; padding: 0.8rem 1.2rem; border-radius: 100px;
+    border: 2px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; transition: all 0.2s;
+  }
+  .search-input:focus { border-color: var(--sage); box-shadow: 0 4px 14px rgba(43,66,36,0.1); }
+  
+  .search-results {
+    position: absolute; top: 100%; left: 0; right: 0; background: white;
+    border: 1px solid rgba(43,66,36,0.1); border-radius: 12px; margin-top: 0.5rem;
+    box-shadow: 0 12px 30px rgba(43,66,36,0.1); z-index: 10; max-height: 250px; overflow-y: auto; display: none;
+  }
+  .search-result-item {
+    padding: 0.8rem 1.2rem; cursor: pointer; display: flex; justify-content: space-between;
+    border-bottom: 1px solid rgba(43,66,36,0.05);
+  }
+  .search-result-item:hover { background: rgba(43,66,36,0.04); }
+  .search-result-item:last-child { border-bottom: none; }
+  
+  .active-stock {
+    background: rgba(142,186,126,0.1); padding: 1.2rem; border-radius: 12px; margin-bottom: 1.5rem; display: none;
+  }
+  .active-stock-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem; }
+  .active-ticker { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--forest); }
+  .active-price { font-size: 1.2rem; font-weight: 700; color: var(--forest); }
+  .active-name { font-size: 0.85rem; color: #6b7280; }
+  
+  .trade-controls { display: flex; flex-direction: column; gap: 1rem; }
+  .qty-input {
+    width: 100%; padding: 0.8rem 1.2rem; border-radius: 12px;
+    border: 1px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 1rem; text-align: center;
+  }
+  .btn-buy { background: #2e7d32; color: white; width: 100%; border-radius: 12px; padding: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: background 0.2s; }
+  .btn-buy:hover { background: #1b5e20; }
+  .btn-sell { background: #d32f2f; color: white; width: 100%; border-radius: 12px; padding: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: background 0.2s; }
+  .btn-sell:hover { background: #b71c1c; }
+
+  /* OVERLAY / LOGIN PROMPT */
+  .login-overlay {
+    position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+    border-radius: 20px; text-align: center; padding: 2rem;
+  }
+
+  @media (max-width: 900px) {
+    .game-container { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
+  }
+
+  /* DARK MODE STYLES */
+  html.dark .game-panel { background: #242924; border-color: rgba(142,186,126,0.1); }
+  html.dark .panel-title, html.dark .stat-value, html.dark .active-ticker, html.dark .active-price, html.dark .portfolio-table td { color: #e8f0e0; }
+  html.dark .stat-box { background: rgba(142,186,126,0.06); }
+  html.dark .search-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
+  html.dark .search-results { background: #242924; border-color: rgba(142,186,126,0.1); }
+  html.dark .search-result-item:hover { background: rgba(142,186,126,0.08); }
+  html.dark .active-stock { background: rgba(142,186,126,0.08); }
+  html.dark .qty-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
+  html.dark .portfolio-table th { border-bottom-color: rgba(142,186,126,0.1); }
+  html.dark .portfolio-table td { border-bottom-color: rgba(142,186,126,0.05); }
+  html.dark .login-overlay { background: rgba(26,31,26,0.85); }
+</style>
+</head>
+<body>
+
+<nav id="mainNav">
+  <a href="index.html" class="nav-logo"><img src="logo.png" alt="Brightside" class="nav-logo-img"><span class="nav-brand"><span class="brand-primary">Bright</span><span class="brand-secondary">side</span></span></a>
+  <ul class="nav-links">
+    <li><a href="index.html" id="nl-home">Home</a></li>
+    <li><a href="about.html" id="nl-about">About Us</a></li>
+    <li><a href="curriculum.html" id="nl-curriculum">Curriculum</a></li>
+    <li><a href="medical.html" id="nl-medical">Medical Finances</a></li>
+    <li><a href="course.html" id="nl-course">Courses</a></li>
+    <li><a href="game.html" id="nl-game" class="active">Simulator</a></li>
+    <li><a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" class="nav-cta">Donate</a></li>
+  </ul>
+  <button class="nav-hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+      <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link">Log In</a>
+<button class="nav-user-btn" id="nav-user-btn" onclick="toggleDropdown()">
+  <div class="nav-user-avatar" id="nav-user-initials">?</div>
+  <span id="nav-user-name"></span>
+  <span class="nav-user-chevron">▼</span>
+</button>
+<div class="nav-dropdown" id="nav-dropdown">
+  <a href="account.html">Account Information</a>
+  <a href="settings.html">Settings</a>
+  <button class="dropdown-logout" onclick="navSignOut()">Log Out</button>
+</div>
+
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">✕</button>
+  <a href="index.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Home</a>
+  <a href="about.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">About Us</a>
+  <a href="curriculum.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Curriculum</a>
+  <a href="game.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Simulator</a>
+  <a href="auth.html" id="mobile-login-link" onclick="document.getElementById('mobileMenu').classList.remove('open')">Log In</a>
+  <a href="account.html" id="mobile-user-link" style="display:none" onclick="document.getElementById('mobileMenu').classList.remove('open')"></a>
+</div>
+
+<div class="game-bg"></div>
+<div class="game-container">
+
+  <!-- LEFT: MAIN PORTFOLIO -->
+  <div class="game-panel" style="position: relative;">
+    <div id="portfolio-overlay" class="login-overlay">
+      <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--forest);margin-bottom:1rem;">Log in to trade</h3>
+      <p style="color:#6b7280;margin-bottom:1.5rem;">Save your progress and compete.</p>
+      <a href="auth.html" class="btn-primary">Log In</a>
+    </div>
+
+    <div class="panel-title">My Portfolio</div>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <span class="stat-label">Total Value</span>
+        <div class="stat-value" id="val-total">$0.00</div>
+        <div class="stat-change" id="val-return">+0.00%</div>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Buying Power</span>
+        <div class="stat-value" id="val-cash">$0.00</div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="font-size: 1.2rem; margin-top:2rem;">Holdings</div>
+    <table class="portfolio-table">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Shares</th>
+          <th>Avg Cost</th>
+          <th>Current</th>
+          <th>Total Return</th>
+        </tr>
+      </thead>
+      <tbody id="holdings-body">
+        <!-- Holdings injected here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- RIGHT: TRADING TERMINAL -->
+  <div class="game-panel" style="position: relative;">
+    <div id="trade-overlay" class="login-overlay">
+      <p style="color:#6b7280;">Log in to access terminal.</p>
+    </div>
+
+    <div class="panel-title">Trade</div>
+    
+    <div class="search-wrapper">
+      <input type="text" id="stock-search" class="search-input" placeholder="Search ticker or company..." autocomplete="off">
+      <div class="search-results" id="search-results"></div>
+    </div>
+
+    <!-- Active stock info injected here -->
+    <div class="active-stock" id="active-stock">
+      <div class="active-stock-header">
+        <div>
+          <div class="active-ticker" id="selected-ticker">AAPL</div>
+          <div class="active-name" id="selected-name">Apple Inc.</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="active-price" id="selected-price">$0.00</div>
+          <div class="stat-change" id="selected-change">0.00</div>
+        </div>
+      </div>
+      
+      <div class="trade-controls" style="margin-top: 1rem;">
+        <input type="number" id="trade-qty" class="qty-input" placeholder="0 Shares" min="1" step="1">
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn-buy" id="btn-buy">Buy</button>
+          <button class="btn-sell" id="btn-sell">Sell</button>
+        </div>
+        <div id="trade-error" style="color:#d32f2f; font-size:0.8rem; text-align:center; display:none; margin-top:0.5rem;"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand"><a href="index.html" class="nav-logo"><img src="logo.png" alt="Brightside" class="nav-logo-img"><span class="nav-brand"><span class="brand-primary">Bright</span><span class="brand-secondary">side</span></span></a><p class="footer-tagline">Financial literacy for every age, every background, every chapter of life. Free, always.</p></div>
+    <div class="footer-col"><h4>Pages</h4><ul><li><a href="about.html">About Us</a></li><li><a href="curriculum.html">Curriculum</a></li><li><a href="medical.html">Medical Finances</a></li><li><a href="game.html">Simulator</a></li></ul></div>
+    <div class="footer-col"><h4>Programs</h4><ul><li><a href="curriculum.html">Money Sprouts</a></li><li><a href="curriculum.html">Smart Start</a></li><li><a href="curriculum.html">Financial Foundations</a></li></ul></div>
+  </div>
+  <div class="footer-bottom"><span>© 2026 Brightside Finance Foundation</span></div>
+</footer>
+
+<script>
+(function(){
+  var nav = document.getElementById('mainNav');
+  window.addEventListener('scroll', function(){
+    nav.classList.toggle('scrolled', window.scrollY > 10);
+  });
+})();
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const app  = initializeApp({
+    apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
+    authDomain: "website-bs-fbeab.firebaseapp.com",
+    projectId: "website-bs-fbeab",
+    storageBucket: "website-bs-fbeab.firebasestorage.app",
+    messagingSenderId: "995737362868",
+    appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
+  });
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // Attach to window so game.js can use them
+  window.auth = auth;
+  window.db = db;
+  window.firebaseModules = {
+      doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs
+  };
+
+  // Setup generic UI logic for the layout
+  function setNavAvatar(photoURL, name) {
+    const el = document.getElementById('nav-user-initials');
+    if (!el) return;
+    if (photoURL) {
+      el.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      el.textContent = name ? name.charAt(0).toUpperCase() : '?';
+    }
+  }
+
+  onAuthStateChanged(auth, async user => {
+    const loginBtn    = document.getElementById('nav-login-btn-link');
+    const userBtn     = document.getElementById('nav-user-btn');
+    const userNameEl  = document.getElementById('nav-user-name');
+    const mobileLogin = document.getElementById('mobile-login-link');
+    const mobileUser  = document.getElementById('mobile-user-link');
+    
+    const pOverlay = document.getElementById('portfolio-overlay');
+    const tOverlay = document.getElementById('trade-overlay');
+
+    if (user) {
+      const name = user.displayName || user.email.split('@')[0];
+      if (loginBtn)    loginBtn.style.display  = 'none';
+      if (userBtn)     { userBtn.style.display = 'inline-flex'; if (userNameEl) userNameEl.textContent = name; }
+      if (mobileLogin) mobileLogin.style.display = 'none';
+      if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
+
+      // Hide overlays
+      if(pOverlay) pOverlay.style.display = 'none';
+      if(tOverlay) tOverlay.style.display = 'none';
+
+      // Load user avatar
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const photoURL = snap.exists() ? snap.data()?.photoURL : null;
+        setNavAvatar(photoURL || user.photoURL, name);
+      } catch {
+        setNavAvatar(user.photoURL, name);
+      }
+      
+      // Dispatch event to start game engine
+      window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user: user } }));
+
+    } else {
+      if (loginBtn)    loginBtn.style.display  = '';
+      if (userBtn)     userBtn.style.display   = 'none';
+      if (mobileLogin) mobileLogin.style.display = '';
+      if (mobileUser)  mobileUser.style.display  = 'none';
+      
+      // Show overlays
+      if(pOverlay) pOverlay.style.display = 'flex';
+      if(tOverlay) tOverlay.style.display = 'flex';
+    }
+  });
+
+  window.navSignOut = async () => {
+    await signOut(auth);
+    window.location.reload();
+  };
+</script>
+
+<script>
+  function positionDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    if (!btn || !dd) return;
+    const rect = btn.getBoundingClientRect();
+    dd.style.position = 'fixed'; dd.style.left = rect.left + rect.width / 2 + 'px';
+    dd.style.top = rect.bottom + 'px'; dd.style.transform = 'translateX(-50%)';
+  }
+  function toggleDropdown() {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    btn.classList.toggle('open'); dd.classList.toggle('open');
+    if (dd.classList.contains('open')) positionDropdown();
+  }
+  document.addEventListener('click', e => {
+    const btn = document.getElementById('nav-user-btn');
+    const dd  = document.getElementById('nav-dropdown');
+    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
+      btn.classList.remove('open'); dd.classList.remove('open');
+    }
+  });
+  window.addEventListener('resize', positionDropdown);
+
+  function adjustNavRight() {
+    const nav = document.getElementById('mainNav');
+    const loginBtn = document.getElementById('nav-login-btn-link');
+    const userBtn  = document.getElementById('nav-user-btn');
+    if (!nav) return;
+    if (window.innerWidth <= 900) { nav.style.paddingRight = ''; return; }
+    const authBtn = (userBtn && userBtn.style.display !== 'none') ? userBtn : loginBtn;
+    if (!authBtn) return;
+    const btnRect = authBtn.getBoundingClientRect();
+    const navRect = nav.getBoundingClientRect();
+    const overlap = navRect.right - btnRect.left;
+    const basePadding = 16;
+    if (overlap > 0) nav.style.paddingRight = (overlap + basePadding) + 'px';
+    else nav.style.paddingRight = basePadding + 'px';
+  }
+  adjustNavRight(); window.addEventListener('resize', adjustNavRight);
+  setTimeout(adjustNavRight, 500);
+
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+
+<!-- Game Logic -->
+<script src="game.js"></script>
+</body>
+</html>
