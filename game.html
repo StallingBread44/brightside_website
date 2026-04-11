@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brightside — Stock Market Simulator</title>
 <link rel="stylesheet" href="shared.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
   /* ── GAME LAYOUT ── */
   .game-container {
@@ -145,6 +146,27 @@
   html.dark .portfolio-table th { border-bottom-color: rgba(142,186,126,0.1); }
   html.dark .portfolio-table td { border-bottom-color: rgba(142,186,126,0.05); }
   html.dark .login-overlay { background: rgba(26,31,26,0.85); }
+
+  /* ── CHARTING ── */
+  .chart-container {
+    height: 300px;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+  .range-toggles {
+    display: flex; gap: 0.5rem; margin-top: 1rem;
+    justify-content: center;
+  }
+  .range-btn {
+    padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid rgba(43,66,36,0.1);
+    background: white; color: var(--sage); font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .range-btn:hover { background: rgba(43,66,36,0.04); }
+  .range-btn.active { background: var(--sage); color: white; border-color: var(--sage); }
+
+  html.dark .range-btn { background: #1a1f1a; border-color: rgba(142,186,126,0.1); color: #8fa887; }
+  html.dark .range-btn.active { background: var(--sage); color: white; }
 </style>
 </head>
 <body>
@@ -211,6 +233,13 @@
       </div>
     </div>
 
+    <!-- Portfolio Chart -->
+    <div id="portfolio-chart-area">
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
     <div class="panel-title" style="font-size: 1.2rem; margin-top:2rem;">Holdings</div>
     <table class="portfolio-table">
       <thead>
@@ -252,6 +281,17 @@
           <div class="active-price" id="selected-price">$0.00</div>
           <div class="stat-change" id="selected-change">0.00</div>
         </div>
+      </div>
+
+      <!-- Stock History Chart -->
+      <div class="chart-container" style="height: 180px;">
+        <canvas id="stockChart"></canvas>
+      </div>
+      <div class="range-toggles">
+        <button class="range-btn" data-range="1W">1W</button>
+        <button class="range-btn" data-range="1M">1M</button>
+        <button class="range-btn active" data-range="6M">6M</button>
+        <button class="range-btn" data-range="1Y">1Y</button>
       </div>
       
       <div class="trade-controls" style="margin-top: 1rem;">

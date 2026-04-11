@@ -4,9 +4,12 @@ let fModules = null;
 
 // Game State
 let cash = 100000.0;
-let holdings = {}; // { AAPL: { shares: 10, avgCost: 150.0 } }
-let marketData = {}; // { AAPL: { price: 155.0, change: 5.0, changePercent: 3.2, name: 'Apple Inc.' } }
+let holdings = {};
+let marketData = {};
 let selectedTicker = null;
+let currentRange = '6M';
+let stockChart = null;
+let mainChart = null;
 
 /* -------------------------------------------------------------------------- */
 /*                                INITIALIZATION                              */
@@ -26,6 +29,8 @@ window.addEventListener('GameAuthReady', async (e) => {
     // Setup Listeners
     setupSearch();
     setupTradeControls();
+    setupRangeToggles();
+    initCharts();
 });
 
 async function loadGameState() {
@@ -162,42 +167,46 @@ function setupSearch() {
     const input = document.getElementById('stock-search');
     const resultsContainer = document.getElementById('search-results');
     
+    if (!input || !resultsContainer) return;
+    
     input.addEventListener('input', (e) => {
         const val = e.target.value.toUpperCase().trim();
         resultsContainer.innerHTML = '';
+        console.log("Searching for:", val, "Market data size:", Object.keys(marketData).length);
         
         if (val.length < 1) {
             resultsContainer.style.display = 'none';
             return;
         }
         
-        // Filter marketData array
         const keys = Object.keys(marketData);
-        const matches = keys.filter(k => 
-            k.includes(val) || 
-            (marketData[k].name && marketData[k].name.toUpperCase().includes(val))
-        ).slice(0, 8); // top 8 matches
+        const matches = keys.filter(k => {
+            const symMatch = k.toUpperCase().includes(val);
+            const nameMatch = marketData[k].name && marketData[k].name.toUpperCase().includes(val);
+            return symMatch || nameMatch;
+        }).slice(0, 10);
         
         if (matches.length > 0) {
             matches.forEach(t => {
                 const md = marketData[t];
-                let ccolor = md.change >= 0 ? '#2e7d32' : '#d32f2f';
+                const ccolor = md.change >= 0 ? '#2e7d32' : '#d32f2f';
                 const div = document.createElement('div');
                 div.className = 'search-result-item';
                 div.innerHTML = `
-                    <div><strong>${t}</strong> <span style="font-size:0.8rem;color:#6b7280;margin-left:8px;">${md.name}</span></div>
-                    <div style="color:${ccolor}">${formatMoney(md.price)}</div>
+                    <div><strong>${t}</strong> <span style="font-size:0.75rem;opacity:0.6;margin-left:8px;">${md.name || ''}</span></div>
+                    <div style="color:${ccolor};font-weight:600;">${formatMoney(md.price)}</div>
                 `;
-                div.onclick = () => {
+                div.addEventListener('click', () => {
                     input.value = '';
                     resultsContainer.style.display = 'none';
                     selectStock(t);
-                };
+                });
                 resultsContainer.appendChild(div);
             });
             resultsContainer.style.display = 'block';
         } else {
-            resultsContainer.style.display = 'none';
+            resultsContainer.innerHTML = `<div class="search-result-item" style="color:#9ca3af;cursor:default;">No stocks found</div>`;
+            resultsContainer.style.display = 'block';
         }
     });
     
@@ -218,17 +227,124 @@ function selectStock(ticker) {
 }
 
 function renderActiveStock(ticker) {
-    if (!marketData[ticker]) return; // Data not ready
+    if (!marketData[ticker]) return;
     const data = marketData[ticker];
     
     document.getElementById('selected-ticker').textContent = ticker;
-    document.getElementById('selected-name').textContent = data.name;
+    document.getElementById('selected-name').textContent = data.name || '';
     document.getElementById('selected-price').textContent = formatMoney(data.price);
     
     const changeEl = document.getElementById('selected-change');
     const sign = data.change >= 0 ? '+' : '';
     changeEl.textContent = `${sign}${formatMoney(data.change)} (${sign}${data.changePercent.toFixed(2)}%)`;
     changeEl.style.color = data.change >= 0 ? '#2e7d32' : '#d32f2f';
+
+    updateStockChart(ticker);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                  CHARTING                                  */
+/* -------------------------------------------------------------------------- */
+
+function initCharts() {
+    const ctxMain = document.getElementById('mainChart').getContext('2d');
+    const ctxStock = document.getElementById('stockChart').getContext('2d');
+
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: {
+            x: { display: false },
+            y: { 
+                grid: { display: false },
+                ticks: { color: '#9ca3af', font: { size: 10 } }
+            }
+        },
+        elements: { point: { radius: 0 }, line: { tension: 0.4 } }
+    };
+
+    mainChart = new Chart(ctxMain, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Portfolio', data: [], fill: true, borderColor: '#3d6133', backgroundColor: 'rgba(61, 97, 51, 0.1)', borderWidth: 2 }] },
+        options: commonOptions
+    });
+
+    stockChart = new Chart(ctxStock, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Price', data: [], fill: true, borderColor: '#3d6133', backgroundColor: 'rgba(61, 97, 51, 0.1)', borderWidth: 2 }] },
+        options: commonOptions
+    });
+
+    renderPlaceholderChart();
+}
+
+function renderPlaceholderChart() {
+    // Show "No data yet" state for main portfolio chart
+    const area = document.getElementById('portfolio-chart-area');
+    if (area && (!mainChart.data.datasets[0].data.length)) {
+        const overlay = document.createElement('div');
+        overlay.id = 'chart-placeholder';
+        overlay.style = "position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#9ca3af; font-size:0.9rem; pointer-events:none;";
+        overlay.textContent = "No portfolio history yet. Progress will be tracked from today.";
+        area.style.position = 'relative';
+        if (!document.getElementById('chart-placeholder')) area.appendChild(overlay);
+    }
+}
+
+function setupRangeToggles() {
+    const btns = document.querySelectorAll('.range-btn');
+    btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentRange = btn.dataset.range;
+            if (selectedTicker) updateStockChart(selectedTicker);
+        });
+    });
+}
+
+async function updateStockChart(ticker) {
+    if (!stockChart) return;
+    const { doc, getDoc } = fModules;
+    
+    try {
+        const snap = await getDoc(doc(db, 'stock_history', ticker));
+        if (!snap.exists()) return;
+        
+        const history = snap.data().prices || [];
+        // Filter history by currentRange
+        const filtered = filterHistory(history, currentRange);
+        
+        stockChart.data.labels = filtered.map(d => d.date);
+        stockChart.data.datasets[0].data = filtered.map(d => d.price);
+        
+        // Color based on range performance
+        const firstPrice = filtered[0].price;
+        const lastPrice = filtered[filtered.length - 1].price;
+        const color = lastPrice >= firstPrice ? '#2e7d32' : '#d32f2f';
+        const bg = lastPrice >= firstPrice ? 'rgba(46, 125, 50, 0.1)' : 'rgba(211, 47, 47, 0.1)';
+        
+        stockChart.data.datasets[0].borderColor = color;
+        stockChart.data.datasets[0].backgroundColor = bg;
+        
+        stockChart.update();
+    } catch (e) {
+        console.error("Chart load failed:", e);
+    }
+}
+
+function filterHistory(history, range) {
+    const now = new Date();
+    let days = 365;
+    if (range === '1W') days = 7;
+    else if (range === '1M') days = 30;
+    else if (range === '6M') days = 180;
+    
+    const cutoff = new Date();
+    cutoff.setDate(now.getDate() - days);
+    
+    return history.filter(h => new Date(h.date) >= cutoff);
 }
 
 /* -------------------------------------------------------------------------- */
