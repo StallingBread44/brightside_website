@@ -76,6 +76,16 @@ const firebaseConfig = {
     return map[code] || "Something went wrong. Please try again.";
   }
 
+  // Returns age in years from a YYYY-MM-DD string
+  function getAgeFromDob(dobStr) {
+    const today = new Date();
+    const dob   = new Date(dobStr);
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    return age;
+  }
+
   window.handleSubmit = async () => {
     const email    = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
@@ -86,6 +96,11 @@ const firebaseConfig = {
       const name = document.getElementById("full-name").value.trim();
       const dob  = document.getElementById("dob").value;
       if (!name || !dob) { showError("Please fill in all fields."); return; }
+      // COPPA: block account creation for users under 13
+      if (getAgeFromDob(dob) < 13) {
+        showError("You must be 13 or older to create an account. Please ask a parent or guardian for help.");
+        return;
+      }
     }
     setLoading(btn, true);
     try {

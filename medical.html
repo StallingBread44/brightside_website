@@ -706,11 +706,15 @@
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
-  function setNavAvatar(photoURL, name) {
+  function isSafePhotoURL(url) {
+    return typeof url === 'string' && (url.startsWith('data:image/') || /^https:\/\//.test(url));
+  }
+
+    function setNavAvatar(photoURL, name) {
     const el = document.getElementById('nav-user-initials');
     if (!el) return;
     if (photoURL) {
-      el.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      const _img = document.createElement("img"); _img.src = photoURL; _img.alt = ""; _img.style.cssText = "width:100%;height:100%;object-fit:cover;border-radius:50%;"; el.replaceChildren(_img);
     } else {
       el.textContent = name ? name.charAt(0).toUpperCase() : '?';
     }
@@ -733,10 +737,11 @@
       // Fetch photo from Firestore
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
-        const photoURL = snap.exists() ? snap.data()?.photoURL : null;
-        setNavAvatar(photoURL || user.photoURL, name);
+        const rawPhotoURL = snap.exists() ? snap.data()?.photoURL : null;
+        const photoURL = isSafePhotoURL(rawPhotoURL) ? rawPhotoURL : (isSafePhotoURL(user.photoURL) ? user.photoURL : null);
+        setNavAvatar(photoURL, name);
       } catch {
-        setNavAvatar(user.photoURL, name);
+        setNavAvatar(isSafePhotoURL(user.photoURL) ? user.photoURL : null, name);
       }
     } else {
       if (loginBtn)    loginBtn.style.display  = '';
