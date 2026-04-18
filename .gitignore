@@ -4,3 +4,4 @@ venv
 .vscode
 walkthrough.md
 delete_stocks.py
+scripts/serviceAccountKey.json
