@@ -6,17 +6,22 @@ import pandas as pd
 import time
 import os
 import requests
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (if present)
+load_dotenv()
 
 # ---------------------------------------------------------
 # CONFIG
 # ---------------------------------------------------------
-SERVICE_ACCOUNT_PATH = 'serviceAccountKey.json'
+SERVICE_ACCOUNT_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', 'serviceAccountKey.json')
 BATCH_SIZE = 20  # Slower batches for history to avoid rate limits
 MAX_HISTORY_POINTS = 365 * 5  # 5 years of daily points
 
 try:
     if not os.path.exists(SERVICE_ACCOUNT_PATH):
         print(f"ERROR: {SERVICE_ACCOUNT_PATH} not found.")
+        print("Please configure the FIREBASE_CREDENTIALS_PATH in your .env file.")
         exit(1)
     cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
     firebase_admin.initialize_app(cred)

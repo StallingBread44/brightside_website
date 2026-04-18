@@ -8,19 +8,23 @@ import os
 import requests
 from datetime import datetime, timezone
 import schedule
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (if present)
+load_dotenv()
 
 # ---------------------------------------------------------
 # CONSTANTS & CONFIG
 # ---------------------------------------------------------
-SERVICE_ACCOUNT_PATH = 'serviceAccountKey.json'
+SERVICE_ACCOUNT_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', 'serviceAccountKey.json')
 BATCH_SIZE = 50
 MAX_HISTORY_POINTS = 365 * 5  # Cap: 5 years of daily points
 
 try:
     if not os.path.exists(SERVICE_ACCOUNT_PATH):
         print(f"ERROR: {SERVICE_ACCOUNT_PATH} not found.")
-        print("Please download your Firebase Service Account key from the Firebase Console")
-        print("and save it in this directory as 'serviceAccountKey.json'.")
+        print("Please configure the FIREBASE_CREDENTIALS_PATH in your .env file")
+        print("to point to a secure location outside your Git repository.")
         exit(1)
 
     cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
