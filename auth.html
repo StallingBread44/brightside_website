@@ -5,6 +5,7 @@
 <link rel="icon" type="image/png" href="logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brightside — Sign In</title>
+<link rel="stylesheet" href="shared.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
@@ -20,7 +21,7 @@
     onAuthStateChanged,
     updateProfile
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────
 const firebaseConfig = {
@@ -36,6 +37,15 @@ const firebaseConfig = {
   const app      = initializeApp(firebaseConfig);
   const auth     = getAuth(app);
   const db       = getFirestore(app);
+
+  enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code == 'failed-precondition') {
+          console.warn("Persistence failed: Multiple tabs open.");
+      } else if (err.code == 'unimplemented') {
+          console.warn("Persistence not supported by this browser.");
+      }
+  });
+
   const provider = new GoogleAuthProvider();
 
   onAuthStateChanged(auth, user => {
@@ -121,20 +131,6 @@ const firebaseConfig = {
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --primary:     #2b4224;
-    --forest:      #2b4224;
-    --sage:        #8eba7e;
-    --mint:        #a8cc98;
-    --gold:        #a8ac94;
-    --gold-light:  #c8ccb0;
-    --rust:        #7a6b3a;
-    --cream:       #f5f0e8;
-    --warm-white:  #faf8f4;
-    --secondary:   #e8f0e0;
-    --text-muted:  #6b7280;
-  }
-
   body {
     font-family: 'DM Sans', sans-serif;
     background: var(--warm-white);
@@ -144,39 +140,11 @@ const firebaseConfig = {
     flex-direction: column;
   }
 
-  /* ── NAV (matches site nav) ─────────────────────────── */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.2rem 3rem;
-    background: rgba(250,248,244,0.92);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid transparent;
-    transition: all 0.3s;
-  }
-  nav.scrolled {
-    border-bottom-color: rgba(43,66,36,0.08);
-    box-shadow: 0 4px 24px rgba(43,66,36,0.06);
-  }
-  .nav-logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
-  .nav-logo-img { height: 36px; width: 36px; object-fit: contain; }
-  .nav-brand { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 900; line-height: 1; }
-  .brand-primary { color: var(--forest); }
-  .brand-secondary { color: var(--sage); }
-  .nav-back {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    color: var(--text-muted); font-size: 0.88rem; font-weight: 500;
-    text-decoration: none; transition: color 0.2s;
-  }
-  .nav-back:hover { color: var(--forest); }
-  .nav-back::before { content: '←'; }
-
   /* ── PAGE LAYOUT ────────────────────────────────────── */
   .auth-wrapper {
     flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    padding-top: 72px;
     min-height: 100vh;
   }
 
@@ -189,6 +157,7 @@ const firebaseConfig = {
     flex-direction: column;
     justify-content: flex-end;
     padding: 4rem;
+    /* Intentionally no padding-top offset — bleeds to the very top */
   }
 
   .auth-left-bg {
@@ -294,6 +263,7 @@ const firebaseConfig = {
     flex-direction: column;
     justify-content: center;
     padding: 4rem 4.5rem;
+    padding-top: 6rem; /* extra top room to clear the floating pill nav */
     position: relative;
   }
 
@@ -311,7 +281,7 @@ const firebaseConfig = {
     padding: 0.75rem 0;
     font-family: 'DM Sans', sans-serif;
     font-size: 0.9rem; font-weight: 500;
-    color: var(--text-muted);
+    color: #6b7280;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
     transition: color 0.2s, border-color 0.2s;
@@ -327,7 +297,7 @@ const firebaseConfig = {
     color: var(--forest); margin-bottom: 0.4rem;
   }
   .auth-sub {
-    font-size: 0.88rem; color: var(--text-muted); margin-bottom: 2rem;
+    font-size: 0.88rem; color: #6b7280; margin-bottom: 2rem;
     line-height: 1.5; font-weight: 300;
   }
 
@@ -449,89 +419,38 @@ const firebaseConfig = {
   @media (max-width: 860px) {
     .auth-wrapper { grid-template-columns: 1fr; }
     .auth-left { display: none; }
-    .auth-right { padding: 3rem 2rem; }
+    .auth-right { padding: 5rem 2rem 3rem; }
   }
-
-  /* ── Dark mode ── */
-  html.dark body { background: #1a1f1a; color: #e8f0e0; }
-
-  html.dark nav {
-    background: rgba(26,31,26,0.96) !important;
-    border-bottom-color: rgba(142,186,126,0.1) !important;
-  }
-  html.dark .brand-primary { color: #c8dfc0; }
-  html.dark .nav-back { color: #8fa887; }
-  html.dark .nav-back:hover { color: #c8dfc0; }
-
-  html.dark .auth-right {
-    background: #1e241e;
-  }
-  html.dark .auth-right-inner { color: #e8f0e0; }
-
-  html.dark .tab-row { border-bottom-color: rgba(142,186,126,0.12); }
-  html.dark .tab { color: #8fa887; }
-  html.dark .tab.active { color: #e8f0e0; border-bottom-color: var(--sage); }
-  html.dark .tab:hover:not(.active) { color: #e8f0e0; }
-
-  html.dark .auth-title { color: #e8f0e0; }
-  html.dark .auth-sub   { color: #8fa887; }
-
-  html.dark .google-btn {
-    background: #242924;
-    border-color: rgba(142,186,126,0.18);
-    color: #e8f0e0;
-    box-shadow: none;
-  }
-  html.dark .google-btn:hover {
-    border-color: rgba(142,186,126,0.4);
-    background: #2e352e;
-    box-shadow: none;
-  }
-
-  html.dark .divider::before,
-  html.dark .divider::after { background: rgba(142,186,126,0.12); }
-  html.dark .divider span { color: #6b7d65; }
-
-  html.dark .field label { color: #a8cc98; opacity: 1; }
-  html.dark .field input {
-    background: #242924;
-    border-color: rgba(142,186,126,0.15);
-    color: #e8f0e0;
-  }
-  html.dark .field input::placeholder { color: #4a5e4a; }
-  html.dark .field input:focus {
-    border-color: var(--sage);
-    box-shadow: 0 0 0 3px rgba(142,186,126,0.1);
-  }
-
-  html.dark .submit-btn {
-    background: #3a5830;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-  }
-  html.dark .submit-btn:hover { background: #4a6840; }
-
-  html.dark .auth-footer-note { color: #6b7d65; }
-  html.dark .auth-footer-note a { color: var(--sage); }
-
-  html.dark .auth-page-footer {
-    background: #111511;
-    border-top-color: rgba(142,186,126,0.08);
-    color: #6b7d65;
-  }
-  html.dark .auth-page-footer a { color: #8fa887; }
-
 </style>
 </head>
 <body>
 
 <!-- NAV -->
 <nav id="mainNav">
-  <a href="index.html" class="nav-logo">
-    <img src="logo.png" alt="Brightside" class="nav-logo-img">
-    <span class="nav-brand"><span class="brand-primary">Bright</span><span class="brand-secondary">side</span></span>
-  </a>
-  <a href="index.html" class="nav-back">Back to home</a>
+  <a href="index.html" class="nav-logo"><img src="logo.png" alt="Brightside" class="nav-logo-img"><span class="nav-brand"><span class="brand-primary">Bright</span><span class="brand-secondary">side</span></span></a>
+  <ul class="nav-links">
+    <li><a href="index.html" id="nl-home">Home</a></li>
+    <li><a href="about.html" id="nl-about">About Us</a></li>
+    <li><a href="curriculum.html" id="nl-curriculum">Curriculum</a></li>
+    <li><a href="medical.html" id="nl-medical">Medical Finances</a></li>
+    <li><a href="course.html" id="nl-course">Courses</a></li>
+    <li><a href="game.html" id="nl-game">Simulator</a></li>
+    <li><a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" class="nav-cta">Donate</a></li>
+  </ul>
+  <button class="nav-hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">✕</button>
+  <a href="index.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Home</a>
+  <a href="about.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">About Us</a>
+  <a href="curriculum.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Curriculum</a>
+  <a href="medical.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Medical Finances</a>
+  <a href="course.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Courses</a>
+  <a href="game.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Simulator</a>
+  <a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--primary);background:var(--secondary);padding:0.6rem 1.8rem;border-radius:100px;font-size:1rem;">Donate</a>
+</div>
 
 <!-- MAIN -->
 <div class="auth-wrapper">
@@ -661,6 +580,12 @@ const firebaseConfig = {
   window.addEventListener('scroll', () => {
     document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 20);
   });
+  // Mark active page
+  (function(){
+    var page = location.pathname.split('/').pop() || 'index.html';
+    var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course','game.html':'nl-game'};
+    if(map[page]){ var el=document.getElementById(map[page]); if(el) el.classList.add('active'); }
+  })();
 
   // Tab switching
   function setMode(mode) {

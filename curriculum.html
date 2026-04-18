@@ -246,6 +246,7 @@
     <li><a href="curriculum.html" id="nl-curriculum">Curriculum</a></li>
     <li><a href="medical.html" id="nl-medical">Medical Finances</a></li>
     <li><a href="course.html" id="nl-course">Courses</a></li>
+    <li><a href="game.html" id="nl-game">Simulator</a></li>
     <li><a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" class="nav-cta">Donate</a></li>
   </ul>
   <button class="nav-hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
@@ -270,6 +271,7 @@
   <a href="curriculum.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Curriculum</a>
   <a href="medical.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Medical Finances</a>
   <a href="course.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Courses</a>
+  <a href="game.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Simulator</a>
   <a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--primary);background:var(--secondary);padding:0.6rem 1.8rem;border-radius:100px;font-size:1rem;">Donate</a>
   <a href="auth.html" id="mobile-login-link" onclick="document.getElementById('mobileMenu').classList.remove('open')">Log In</a>
   <a href="account.html" id="mobile-user-link" style="display:none" onclick="document.getElementById('mobileMenu').classList.remove('open')"></a>
@@ -509,7 +511,7 @@
   });
   // Mark active page
   var page = location.pathname.split('/').pop() || 'index.html';
-  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course'};
+  var map = {'index.html':'nl-home','about.html':'nl-about','curriculum.html':'nl-curriculum','medical.html':'nl-medical','course.html':'nl-course','game.html':'nl-game'};
   if(map[page]){ var el=document.getElementById(map[page]); if(el) el.classList.add('active'); }
 })();
 </script>
@@ -519,7 +521,7 @@
   import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc }
+  import { getFirestore, doc, getDoc, enableIndexedDbPersistence }
                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const app  = initializeApp({
@@ -532,6 +534,14 @@
   });
   const auth = getAuth(app);
   const db   = getFirestore(app);
+
+  enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code == 'failed-precondition') {
+          console.warn("Persistence failed: Multiple tabs open.");
+      } else if (err.code == 'unimplemented') {
+          console.warn("Persistence not supported by this browser.");
+      }
+  });
 
   function setNavAvatar(photoURL, name) {
     const el = document.getElementById('nav-user-initials');

@@ -8,27 +8,64 @@
 <link rel="stylesheet" href="shared.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  /* ── GAME LAYOUT ── */
-  .game-container {
-    min-height: 100vh;
-    padding: 8rem 4rem 4rem;
-    position: relative;
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 2rem;
-    align-items: start;
-    z-index: 1;
-  }
-  
+  :root { --text-muted: #6b7280; }
+
   .game-bg {
     position: fixed; inset: 0; z-index: 0;
     background: radial-gradient(ellipse 70% 60% at 70% 50%, rgba(142,186,126,0.06) 0%, transparent 70%),
                 radial-gradient(ellipse 40% 40% at 20% 80%, rgba(168,172,148,0.04) 0%, transparent 60%);
   }
 
-  /* ── DASHBOARD BLOCKS ── */
+  /* ── TAB NAVIGATION ── */
+  .simulator-wrapper {
+    min-height: 100vh;
+    padding: 7rem 4rem 4rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sim-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid rgba(43,66,36,0.08);
+    padding-bottom: 0;
+  }
+  .sim-tab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.8rem 1.8rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    border-radius: 8px 8px 0 0;
+  }
+  .sim-tab:hover { color: var(--forest); background: rgba(43,66,36,0.04); }
+  .sim-tab.active { color: var(--forest); border-bottom-color: var(--forest); }
+  html.dark .sim-tab { color: #8fa887; }
+  html.dark .sim-tab:hover { color: #e8f0e0; background: rgba(142,186,126,0.06); }
+  html.dark .sim-tab.active { color: #e8f0e0; border-bottom-color: var(--sage); }
+  html.dark .sim-tabs { border-bottom-color: rgba(142,186,126,0.1); }
+
+  .sim-page { display: none; }
+  .sim-page.active { display: block; }
+
+  /* ── PORTFOLIO LAYOUT ── */
+  .portfolio-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* ── PANEL ── */
   .game-panel {
     background: white;
     border-radius: 20px;
@@ -36,6 +73,7 @@
     padding: 2rem;
     box-shadow: 0 12px 40px rgba(43,66,36,0.05);
     margin-bottom: 2rem;
+    position: relative;
   }
 
   .panel-title {
@@ -49,124 +87,234 @@
     align-items: center;
   }
 
-  /* PORTFOLIO STATS */
-  .stat-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;
-  }
-  .stat-box {
-    background: rgba(43,66,36,0.04);
-    padding: 1.2rem;
-    border-radius: 12px;
-  }
-  .stat-label {
-    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--sage);
-    text-transform: uppercase; margin-bottom: 0.5rem; display: block;
-  }
-  .stat-value {
-    font-family: 'DM Sans', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--forest);
-  }
+  /* STATS */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+  .stat-box { background: rgba(43,66,36,0.04); padding: 1.2rem; border-radius: 12px; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--sage); text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+  .stat-value { font-family: 'DM Sans', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--forest); }
   .stat-change { font-size: 0.85rem; font-weight: 600; margin-top: 0.2rem; display: block; }
   .pos-change { color: #2e7d32; }
   .neg-change { color: #d32f2f; }
 
   /* PORTFOLIO TABLE */
-  .portfolio-table {
-    width: 100%; border-collapse: collapse; text-align: left;
-  }
-  .portfolio-table th {
-    font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: #9ca3af;
-    text-transform: uppercase; padding-bottom: 1rem; border-bottom: 1px solid rgba(43,66,36,0.1);
-  }
-  .portfolio-table td {
-    padding: 1rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); font-size: 0.95rem; font-weight: 500; color: var(--forest);
-  }
+  .portfolio-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .portfolio-table th { font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: #9ca3af; text-transform: uppercase; padding-bottom: 1rem; border-bottom: 1px solid rgba(43,66,36,0.1); }
+  .portfolio-table td { padding: 0.9rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); font-size: 0.95rem; font-weight: 500; color: var(--forest); vertical-align: middle; }
   .portfolio-table tr:last-child td { border-bottom: none; }
   .ticker-cell { font-weight: 700; display: flex; flex-direction: column; }
   .ticker-name { font-size: 0.75rem; color: #9ca3af; font-weight: 400; }
+
+  /* Holdings Action Buttons */
+  .holding-actions { display: flex; gap: 0.4rem; }
+  .btn-hold-buy, .btn-hold-sell {
+    padding: 0.3rem 0.7rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700;
+    border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .btn-hold-buy { background: rgba(46,125,50,0.12); color: #2e7d32; }
+  .btn-hold-buy:hover { background: #2e7d32; color: white; }
+  .btn-hold-sell { background: rgba(211,47,47,0.1); color: #d32f2f; }
+  .btn-hold-sell:hover { background: #d32f2f; color: white; }
 
   /* TRADE PANEL */
   .search-wrapper { position: relative; margin-bottom: 1.5rem; }
   .search-input {
     width: 100%; padding: 0.8rem 1.2rem; border-radius: 100px;
     border: 2px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-    outline: none; transition: all 0.2s;
+    outline: none; transition: all 0.2s; box-sizing: border-box;
   }
   .search-input:focus { border-color: var(--sage); box-shadow: 0 4px 14px rgba(43,66,36,0.1); }
-  
   .search-results {
     position: absolute; top: 100%; left: 0; right: 0; background: white;
     border: 1px solid rgba(43,66,36,0.1); border-radius: 12px; margin-top: 0.5rem;
-    box-shadow: 0 12px 30px rgba(43,66,36,0.1); z-index: 10; max-height: 250px; overflow-y: auto; display: none;
+    box-shadow: 0 12px 30px rgba(43,66,36,0.1); z-index: 1000; max-height: 250px; overflow-y: auto; display: none;
   }
-  .search-result-item {
-    padding: 0.8rem 1.2rem; cursor: pointer; display: flex; justify-content: space-between;
-    border-bottom: 1px solid rgba(43,66,36,0.05);
-  }
+  .search-result-item { padding: 0.8rem 1.2rem; cursor: pointer; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(43,66,36,0.05); }
   .search-result-item:hover { background: rgba(43,66,36,0.04); }
   .search-result-item:last-child { border-bottom: none; }
-  
-  .active-stock {
-    background: rgba(142,186,126,0.1); padding: 1.2rem; border-radius: 12px; margin-bottom: 1.5rem; display: none;
-  }
+
+  .active-stock { background: rgba(142,186,126,0.1); padding: 1.2rem; border-radius: 12px; margin-bottom: 1.5rem; display: none; }
   .active-stock-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem; }
   .active-ticker { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--forest); }
   .active-price { font-size: 1.2rem; font-weight: 700; color: var(--forest); }
   .active-name { font-size: 0.85rem; color: #6b7280; }
-  
+
   .trade-controls { display: flex; flex-direction: column; gap: 1rem; }
-  .qty-input {
-    width: 100%; padding: 0.8rem 1.2rem; border-radius: 12px;
-    border: 1px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 1rem; text-align: center;
-  }
+  .qty-input { width: 100%; padding: 0.8rem 1.2rem; border-radius: 12px; border: 1px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 1rem; text-align: center; box-sizing: border-box; }
   .btn-buy { background: #2e7d32; color: white; width: 100%; border-radius: 12px; padding: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: background 0.2s; }
   .btn-buy:hover { background: #1b5e20; }
   .btn-sell { background: #d32f2f; color: white; width: 100%; border-radius: 12px; padding: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: background 0.2s; }
   .btn-sell:hover { background: #b71c1c; }
 
-  /* OVERLAY / LOGIN PROMPT */
+  /* OVERLAY */
   .login-overlay {
     position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+    display: none; /* hidden by default, JS shows it only when logged out */
+    flex-direction: column; align-items: center; justify-content: center; z-index: 50;
     border-radius: 20px; text-align: center; padding: 2rem;
   }
 
-  @media (max-width: 900px) {
-    .game-container { grid-template-columns: 1fr; padding: 7rem 1.5rem 3rem; }
+  /* CHARTING */
+  .chart-container { height: 300px; width: 100%; position: relative; margin: 1.5rem 0; }
+  .chart-range-toggles { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .range-btn {
+    padding: 0.4rem 0.8rem; border-radius: 100px; border: 1px solid rgba(43,66,36,0.1);
+    background: white; color: var(--text-muted); font-family: 'DM Mono', monospace;
+    font-size: 0.7rem; cursor: pointer; transition: all 0.2s;
+  }
+  .range-btn:hover { background: rgba(43,66,36,0.04); color: var(--forest); }
+  .range-btn.active { background: var(--forest); color: white; border-color: var(--forest); }
+
+  /* ── STOCKS PAGE ── */
+  .stocks-layout {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 2rem;
+    align-items: start;
   }
 
-  /* DARK MODE STYLES */
+  /* Top 50 Table */
+  .stocks-table-wrap { overflow-x: auto; }
+  .stocks-table {
+    width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;
+  }
+  .stocks-table th {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.05em;
+    color: #9ca3af; text-transform: uppercase; padding: 0 0 0.8rem; border-bottom: 1px solid rgba(43,66,36,0.1);
+    cursor: pointer; white-space: nowrap; user-select: none;
+  }
+  .stocks-table th:hover { color: var(--forest); }
+  .stocks-table td { padding: 0.75rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); font-size: 0.9rem; color: var(--forest); white-space: nowrap; }
+  .stocks-table tr:last-child td { border-bottom: none; }
+  .stocks-table tr:hover td { background: rgba(43,66,36,0.02); }
+  .stocks-table .sym { font-weight: 700; }
+  .stocks-table .co-name { font-size: 0.75rem; color: #9ca3af; display: block; }
+  .sort-icon { display: inline-block; margin-left: 3px; opacity: 0.4; }
+  .sort-icon.active { opacity: 1; }
+
+  /* Stock Detail Panel */
+  .stock-detail-panel { position: sticky; top: 7rem; }
+
+  .stock-detail-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 1px solid rgba(43,66,36,0.08);
+  }
+  .stock-detail-ticker { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--forest); }
+  .stock-detail-name { font-size: 0.85rem; color: #6b7280; margin-top: 0.2rem; }
+  .stock-detail-exchange { display: inline-block; font-size: 0.7rem; background: rgba(43,66,36,0.08); color: var(--sage); padding: 0.2rem 0.6rem; border-radius: 100px; margin-top: 0.3rem; }
+  .stock-detail-price { font-size: 2.2rem; font-weight: 700; color: var(--forest); }
+  .stock-detail-change { font-size: 0.9rem; font-weight: 600; margin-top: 0.2rem; }
+
+  .detail-stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 1.5rem;
+  }
+  .detail-stat {
+    padding: 0.7rem 0; border-bottom: 1px solid rgba(43,66,36,0.06);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .detail-stat:nth-child(odd) { padding-right: 1rem; }
+  .detail-stat:nth-child(even) { padding-left: 1rem; border-left: 1px solid rgba(43,66,36,0.06); }
+  .detail-stat-label { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: #9ca3af; text-transform: uppercase; }
+  .detail-stat-val { font-size: 0.88rem; font-weight: 600; color: var(--forest); }
+  .detail-stat-val.hi { color: #2e7d32; }
+  .detail-stat-val.lo { color: #d32f2f; }
+
+  .stocks-search-wrap { position: relative; margin-bottom: 1.5rem; }
+  .stocks-search-input {
+    width: 100%; padding: 0.85rem 1.2rem 0.85rem 3rem;
+    border-radius: 100px; border: 2px solid rgba(43,66,36,0.15);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; transition: all 0.2s;
+    box-sizing: border-box;
+  }
+  .stocks-search-input:focus { border-color: var(--sage); box-shadow: 0 4px 14px rgba(43,66,36,0.1); }
+  .stocks-search-icon {
+    position: absolute; left: 1.1rem; top: 50%; transform: translateY(-50%);
+    color: #9ca3af; font-size: 1rem; pointer-events: none;
+  }
+
+  .stocks-search-results {
+    position: absolute; top: 100%; left: 0; right: 0; background: white;
+    border: 1px solid rgba(43,66,36,0.1); border-radius: 12px; margin-top: 0.5rem;
+    box-shadow: 0 12px 30px rgba(43,66,36,0.1); z-index: 1000; max-height: 220px; overflow-y: auto; display: none;
+  }
+
+  /* detail chart range */
+  .detail-chart-container { height: 200px; width: 100%; position: relative; margin-bottom: 1rem; }
+  .detail-range-row { display: flex; gap: 0.4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .detail-range-btn {
+    padding: 0.35rem 0.75rem; border-radius: 100px; border: 1px solid rgba(43,66,36,0.1);
+    background: white; color: var(--text-muted); font-family: 'DM Mono', monospace;
+    font-size: 0.65rem; cursor: pointer; transition: all 0.2s;
+  }
+  .detail-range-btn:hover { background: rgba(43,66,36,0.04); color: var(--forest); }
+  .detail-range-btn.active { background: var(--forest); color: white; border-color: var(--forest); }
+
+  .detail-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: #9ca3af; font-size: 0.9rem; gap: 0.5rem;
+  }
+  .detail-placeholder svg { opacity: 0.3; }
+
+  /* ── DARK MODE ── */
   html.dark .game-panel { background: #242924; border-color: rgba(142,186,126,0.1); }
-  html.dark .panel-title, html.dark .stat-value, html.dark .active-ticker, html.dark .active-price, html.dark .portfolio-table td { color: #e8f0e0; }
+  html.dark .panel-title, html.dark .stat-value, html.dark .active-ticker, html.dark .active-price,
+  html.dark .portfolio-table td, html.dark .stocks-table td,
+  html.dark .stock-detail-ticker, html.dark .stock-detail-price,
+  html.dark .detail-stat-val { color: #e8f0e0; }
   html.dark .stat-box { background: rgba(142,186,126,0.06); }
-  html.dark .search-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
-  html.dark .search-results { background: #242924; border-color: rgba(142,186,126,0.1); }
+  html.dark .search-input, html.dark .stocks-search-input, html.dark .qty-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
+  html.dark .search-results, html.dark .stocks-search-results { background: #242924; border-color: rgba(142,186,126,0.1); }
   html.dark .search-result-item:hover { background: rgba(142,186,126,0.08); }
   html.dark .active-stock { background: rgba(142,186,126,0.08); }
-  html.dark .qty-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
-  html.dark .portfolio-table th { border-bottom-color: rgba(142,186,126,0.1); }
-  html.dark .portfolio-table td { border-bottom-color: rgba(142,186,126,0.05); }
+  html.dark .portfolio-table th, html.dark .stocks-table th { border-bottom-color: rgba(142,186,126,0.1); }
+  html.dark .portfolio-table td, html.dark .stocks-table td { border-bottom-color: rgba(142,186,126,0.05); }
   html.dark .login-overlay { background: rgba(26,31,26,0.85); }
+  html.dark .range-btn { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #8fa887; }
+  html.dark .range-btn:hover { background: rgba(142,186,126,0.1); color: #e8f0e0; }
+  html.dark .range-btn.active { background: var(--sage); color: #1a1f1a; border-color: var(--sage); }
+  html.dark .detail-range-btn { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #8fa887; }
+  html.dark .detail-range-btn:hover { background: rgba(142,186,126,0.1); color: #e8f0e0; }
+  html.dark .detail-range-btn.active { background: var(--sage); color: #1a1f1a; }
+  html.dark .stocks-table tr:hover td { background: rgba(142,186,126,0.04); }
+  html.dark .detail-stat { border-bottom-color: rgba(142,186,126,0.06); }
+  html.dark .detail-stat:nth-child(even) { border-left-color: rgba(142,186,126,0.06); }
+  html.dark .stock-detail-header { border-bottom-color: rgba(142,186,126,0.08); }
+  html.dark .stock-detail-exchange { background: rgba(142,186,126,0.1); }
+  html.dark .btn-hold-buy { background: rgba(46,125,50,0.2); color: #6dbf67; }
+  html.dark .btn-hold-sell { background: rgba(211,47,47,0.15); color: #ef5350; }
 
-  /* ── CHARTING ── */
-  .chart-container {
-    height: 300px;
-    margin: 1.5rem 0;
-    position: relative;
+  @media (max-width: 1100px) {
+    .stocks-layout { grid-template-columns: 1fr; }
+    .stock-detail-panel { position: static; }
   }
-  .range-toggles {
-    display: flex; gap: 0.5rem; margin-top: 1rem;
-    justify-content: center;
+  @media (max-width: 900px) {
+    .portfolio-layout { grid-template-columns: 1fr; }
+    .simulator-wrapper { padding: 7rem 1.5rem 3rem; }
   }
-  .range-btn {
-    padding: 0.4rem 0.8rem; border-radius: 8px; border: 1px solid rgba(43,66,36,0.1);
-    background: white; color: var(--sage); font-size: 0.75rem; font-weight: 600;
-    cursor: pointer; transition: all 0.2s;
-  }
-  .range-btn:hover { background: rgba(43,66,36,0.04); }
-  .range-btn.active { background: var(--sage); color: white; border-color: var(--sage); }
 
-  html.dark .range-btn { background: #1a1f1a; border-color: rgba(142,186,126,0.1); color: #8fa887; }
-  html.dark .range-btn.active { background: var(--sage); color: white; }
+  /* Quick trade modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    background: white; border-radius: 20px; padding: 2rem; max-width: 360px; width: 90%;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.2);
+  }
+  html.dark .modal-box { background: #242924; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--forest); margin-bottom: 0.3rem; }
+  html.dark .modal-title { color: #e8f0e0; }
+  .modal-subtitle { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
+  .modal-qty-input { width: 100%; padding: 0.8rem 1.2rem; border-radius: 12px; border: 1px solid rgba(43,66,36,0.15); font-family: 'DM Sans', sans-serif; font-size: 1rem; text-align: center; box-sizing: border-box; margin-bottom: 1rem; }
+  html.dark .modal-qty-input { background: #1a1f1a; border-color: rgba(142,186,126,0.15); color: #e8f0e0; }
+  .modal-actions { display: flex; gap: 0.7rem; }
+  .modal-cancel { flex: 1; padding: 0.8rem; border-radius: 12px; border: 1px solid rgba(43,66,36,0.15); background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; color: var(--text-muted); }
+  html.dark .modal-cancel { border-color: rgba(142,186,126,0.15); color: #8fa887; }
+  .modal-confirm { flex: 2; padding: 0.8rem; border-radius: 12px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 700; color: white; }
+  .modal-confirm.buy { background: #2e7d32; }
+  .modal-confirm.sell { background: #d32f2f; }
+  .modal-error { color: #d32f2f; font-size: 0.8rem; text-align: center; margin-top: 0.5rem; display: none; }
+  .modal-success { color: #2e7d32; font-size: 0.8rem; text-align: center; margin-top: 0.5rem; display: none; }
 </style>
 </head>
 <body>
@@ -187,8 +335,8 @@
   </button>
 </nav>
 
-<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link">Log In</a>
-<button class="nav-user-btn" id="nav-user-btn" onclick="toggleDropdown()">
+<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link" style="visibility:hidden;">Log In</a>
+<button class="nav-user-btn" id="nav-user-btn" onclick="toggleDropdown()" style="display:none;">
   <div class="nav-user-avatar" id="nav-user-initials">?</div>
   <span id="nav-user-name"></span>
   <span class="nav-user-chevron">▼</span>
@@ -204,108 +352,203 @@
   <a href="index.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Home</a>
   <a href="about.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">About Us</a>
   <a href="curriculum.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Curriculum</a>
+  <a href="medical.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Medical Finances</a>
+  <a href="course.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Courses</a>
   <a href="game.html" onclick="document.getElementById('mobileMenu').classList.remove('open')">Simulator</a>
-  <a href="auth.html" id="mobile-login-link" onclick="document.getElementById('mobileMenu').classList.remove('open')">Log In</a>
+  <a href="https://hcb.hackclub.com/donations/start/brightside-finance-foundation" onclick="document.getElementById('mobileMenu').classList.remove('open')" style="color:var(--primary);background:var(--secondary);padding:0.6rem 1.8rem;border-radius:100px;font-size:1rem;">Donate</a>
+  <a href="auth.html" id="mobile-login-link" style="display:none;" onclick="document.getElementById('mobileMenu').classList.remove('open')">Log In</a>
   <a href="account.html" id="mobile-user-link" style="display:none" onclick="document.getElementById('mobileMenu').classList.remove('open')"></a>
 </div>
 
 <div class="game-bg"></div>
-<div class="game-container">
 
-  <!-- LEFT: MAIN PORTFOLIO -->
-  <div class="game-panel" style="position: relative;">
-    <div id="portfolio-overlay" class="login-overlay">
-      <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--forest);margin-bottom:1rem;">Log in to trade</h3>
-      <p style="color:#6b7280;margin-bottom:1.5rem;">Save your progress and compete.</p>
-      <a href="auth.html" class="btn-primary">Log In</a>
-    </div>
-
-    <div class="panel-title">My Portfolio</div>
-    <div class="stat-grid">
-      <div class="stat-box">
-        <span class="stat-label">Total Value</span>
-        <div class="stat-value" id="val-total">$0.00</div>
-        <div class="stat-change" id="val-return">+0.00%</div>
-      </div>
-      <div class="stat-box">
-        <span class="stat-label">Buying Power</span>
-        <div class="stat-value" id="val-cash">$0.00</div>
-      </div>
-    </div>
-
-    <!-- Portfolio Chart -->
-    <div id="portfolio-chart-area">
-        <div class="chart-container">
-            <canvas id="mainChart"></canvas>
-        </div>
-    </div>
-
-    <div class="panel-title" style="font-size: 1.2rem; margin-top:2rem;">Holdings</div>
-    <table class="portfolio-table">
-      <thead>
-        <tr>
-          <th>Asset</th>
-          <th>Shares</th>
-          <th>Avg Cost</th>
-          <th>Current</th>
-          <th>Total Return</th>
-        </tr>
-      </thead>
-      <tbody id="holdings-body">
-        <!-- Holdings injected here -->
-      </tbody>
-    </table>
+<div class="simulator-wrapper">
+  <!-- TAB BAR -->
+  <div class="sim-tabs">
+    <button class="sim-tab active" data-tab="portfolio">Portfolio</button>
+    <button class="sim-tab" data-tab="stocks">Stocks</button>
   </div>
 
-  <!-- RIGHT: TRADING TERMINAL -->
-  <div class="game-panel" style="position: relative;">
-    <div id="trade-overlay" class="login-overlay">
-      <p style="color:#6b7280;">Log in to access terminal.</p>
-    </div>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PAGE: PORTFOLIO                             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="sim-page active" id="tab-portfolio">
+    <div class="portfolio-layout">
 
-    <div class="panel-title">Trade</div>
-    
-    <div class="search-wrapper">
-      <input type="text" id="stock-search" class="search-input" placeholder="Search ticker or company..." autocomplete="off">
-      <div class="search-results" id="search-results"></div>
-    </div>
+      <!-- LEFT: PORTFOLIO PANEL -->
+      <div>
+        <div class="game-panel">
+          <div id="portfolio-overlay" class="login-overlay">
+            <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--forest);margin-bottom:1rem;">Log in to trade</h3>
+            <p style="color:#6b7280;margin-bottom:1.5rem;">Save your progress and compete.</p>
+            <a href="auth.html" class="btn-primary">Log In</a>
+          </div>
 
-    <!-- Active stock info injected here -->
-    <div class="active-stock" id="active-stock">
-      <div class="active-stock-header">
-        <div>
-          <div class="active-ticker" id="selected-ticker">AAPL</div>
-          <div class="active-name" id="selected-name">Apple Inc.</div>
+          <div class="panel-title">My Portfolio</div>
+          <div class="stat-grid">
+            <div class="stat-box">
+              <span class="stat-label">Total Value</span>
+              <div class="stat-value" id="val-total">$0.00</div>
+              <div class="stat-change" id="val-return">+0.00%</div>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Buying Power</span>
+              <div class="stat-value" id="val-cash">$0.00</div>
+            </div>
+          </div>
+
+          <!-- Portfolio Chart -->
+          <div id="portfolio-chart-area">
+            <div class="panel-title" style="font-size:1.2rem;">
+              <span>Portfolio Value</span>
+              <div class="chart-range-toggles" id="portfolio-range-toggles">
+                <button class="range-btn" data-range="1W">1W</button>
+                <button class="range-btn" data-range="1M">1M</button>
+                <button class="range-btn active" data-range="6M">6M</button>
+                <button class="range-btn" data-range="1Y">1Y</button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="mainChart"></canvas>
+            </div>
+          </div>
+
+          <div class="panel-title" style="font-size:1.2rem;margin-top:2rem;">Holdings</div>
+          <table class="portfolio-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Shares</th>
+                <th>Avg Cost</th>
+                <th>Current</th>
+                <th>Return</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="holdings-body"></tbody>
+          </table>
         </div>
-        <div style="text-align:right;">
-          <div class="active-price" id="selected-price">$0.00</div>
-          <div class="stat-change" id="selected-change">0.00</div>
-        </div>
       </div>
 
-      <!-- Stock History Chart -->
-      <div class="chart-container" style="height: 180px;">
-        <canvas id="stockChart"></canvas>
-      </div>
-      <div class="range-toggles">
-        <button class="range-btn" data-range="1W">1W</button>
-        <button class="range-btn" data-range="1M">1M</button>
-        <button class="range-btn active" data-range="6M">6M</button>
-        <button class="range-btn" data-range="1Y">1Y</button>
-      </div>
-      
-      <div class="trade-controls" style="margin-top: 1rem;">
-        <input type="number" id="trade-qty" class="qty-input" placeholder="0 Shares" min="1" step="1">
-        <div style="display:flex; gap:0.5rem;">
-          <button class="btn-buy" id="btn-buy">Buy</button>
-          <button class="btn-sell" id="btn-sell">Sell</button>
-        </div>
-        <div id="trade-error" style="color:#d32f2f; font-size:0.8rem; text-align:center; display:none; margin-top:0.5rem;"></div>
-      </div>
     </div>
-
   </div>
 
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- PAGE: STOCKS                                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="sim-page" id="tab-stocks">
+    <div class="stocks-layout">
+
+      <!-- LEFT: TOP 50 TABLE -->
+      <div>
+        <div class="game-panel">
+          <div class="panel-title">
+            <span>Market Overview</span>
+            <span style="font-family:'DM Mono',monospace;font-size:0.75rem;color:#9ca3af;font-weight:400;" id="stocks-count">— stocks</span>
+          </div>
+          <div class="stocks-table-wrap">
+            <table class="stocks-table">
+              <thead>
+                <tr>
+                  <th data-col="ticker">Symbol <span class="sort-icon">↕</span></th>
+                  <th data-col="price">Price <span class="sort-icon">↕</span></th>
+                  <th data-col="change">Change $ <span class="sort-icon">↕</span></th>
+                  <th data-col="changePct">Change % <span class="sort-icon">↕</span></th>
+                  <th data-col="volume">Volume <span class="sort-icon">↕</span></th>
+                  <th data-col="mktCap">Mkt Cap <span class="sort-icon">↕</span></th>
+                </tr>
+              </thead>
+              <tbody id="stocks-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: STOCK DETAIL PANEL -->
+      <div class="stock-detail-panel">
+        <div class="game-panel" id="stock-detail-card">
+          <!-- Search bar always visible at the top -->
+          <div id="detail-search-always" style="display:block;">
+            <div class="stocks-search-wrap">
+              <span class="stocks-search-icon">🔍</span>
+              <input type="text" id="stocks-search-input-init" class="stocks-search-input" placeholder="Search symbol or company..." autocomplete="off">
+              <div class="stocks-search-results" id="stocks-search-results-init"></div>
+            </div>
+          </div>
+
+          <!-- Placeholder state -->
+          <div id="detail-placeholder-state" class="detail-placeholder" style="height:240px;">
+            <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>Search or click a stock to see details</span>
+          </div>
+
+          <!-- Filled state (hidden until stock selected) -->
+          <div id="detail-filled-state" style="display:none;">
+            <div class="stock-detail-header">
+              <div>
+                <div class="stock-detail-ticker" id="detail-ticker">—</div>
+                <div class="stock-detail-name" id="detail-name">—</div>
+                <span class="stock-detail-exchange" id="detail-exchange">NASDAQ</span>
+              </div>
+              <div style="text-align:right;">
+                <div class="stock-detail-price" id="detail-price">$—</div>
+                <div class="stock-detail-change" id="detail-change">—</div>
+              </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="detail-chart-container">
+              <canvas id="detailChart"></canvas>
+            </div>
+            <div class="detail-range-row" id="detail-range-row">
+              <button class="detail-range-btn" data-range="1W">1W</button>
+              <button class="detail-range-btn active" data-range="1M">1M</button>
+              <button class="detail-range-btn" data-range="3M">3M</button>
+              <button class="detail-range-btn" data-range="6M">6M</button>
+              <button class="detail-range-btn" data-range="1Y">1Y</button>
+              <button class="detail-range-btn" data-range="5Y">5Y</button>
+            </div>
+
+            <!-- Stats grid -->
+            <div class="detail-stats-grid">
+              <div class="detail-stat"><span class="detail-stat-label">Day High</span><span class="detail-stat-val hi" id="detail-dayhi">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">Day Low</span><span class="detail-stat-val lo" id="detail-daylo">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">52W High</span><span class="detail-stat-val" id="detail-52hi">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">52W Low</span><span class="detail-stat-val" id="detail-52lo">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">Volume</span><span class="detail-stat-val" id="detail-vol">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">Mkt Cap</span><span class="detail-stat-val" id="detail-mktcap">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">Bid</span><span class="detail-stat-val" id="detail-bid">—</span></div>
+              <div class="detail-stat"><span class="detail-stat-label">Ask</span><span class="detail-stat-val" id="detail-ask">—</span></div>
+            </div>
+
+            <!-- Quick Trade -->
+            <div style="display:flex;gap:0.6rem;margin-top:1rem;" id="detail-trade-btns">
+              <button class="btn-buy" id="detail-btn-buy" style="flex:1;">Buy</button>
+              <button class="btn-sell" id="detail-btn-sell" style="flex:1;">Sell</button>
+            </div>
+            <div id="detail-trade-msg" style="font-size:0.8rem;text-align:center;margin-top:0.5rem;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end simulator-wrapper -->
+
+<!-- ── QUICK TRADE MODAL (for holdings Buy More / Sell) ── -->
+<div class="modal-backdrop" id="quick-modal">
+  <div class="modal-box">
+    <div class="modal-title" id="qm-title">Buy More AAPL</div>
+    <div class="modal-subtitle" id="qm-subtitle">Current price: $0.00 · You own 0 shares</div>
+    <input type="number" class="modal-qty-input" id="qm-qty" placeholder="Number of shares" min="1" step="1">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeQuickModal()">Cancel</button>
+      <button class="modal-confirm buy" id="qm-confirm">Confirm</button>
+    </div>
+    <div class="modal-error" id="qm-error"></div>
+    <div class="modal-success" id="qm-success"></div>
+  </div>
 </div>
 
 <footer>
@@ -330,7 +573,7 @@
 <script type="module">
   import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const app  = initializeApp({
     apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
@@ -343,14 +586,18 @@
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
-  // Attach to window so game.js can use them
+  enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code == 'failed-precondition') {
+          console.warn("Persistence failed: Multiple tabs open.");
+      } else if (err.code == 'unimplemented') {
+          console.warn("Persistence not supported by this browser.");
+      }
+  });
+
   window.auth = auth;
   window.db = db;
-  window.firebaseModules = {
-      doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs
-  };
+  window.firebaseModules = { doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs };
 
-  // Setup generic UI logic for the layout
   function setNavAvatar(photoURL, name) {
     const el = document.getElementById('nav-user-initials');
     if (!el) return;
@@ -361,28 +608,28 @@
     }
   }
 
+  // Use a flag so we only dispatch GameAuthReady once per session
+  let gameStarted = false;
+
   onAuthStateChanged(auth, async user => {
     const loginBtn    = document.getElementById('nav-login-btn-link');
     const userBtn     = document.getElementById('nav-user-btn');
     const userNameEl  = document.getElementById('nav-user-name');
     const mobileLogin = document.getElementById('mobile-login-link');
     const mobileUser  = document.getElementById('mobile-user-link');
-    
-    const pOverlay = document.getElementById('portfolio-overlay');
-    const tOverlay = document.getElementById('trade-overlay');
+    const pOverlay    = document.getElementById('portfolio-overlay');
+    const tOverlay    = document.getElementById('trade-overlay');
 
     if (user) {
       const name = user.displayName || user.email.split('@')[0];
-      if (loginBtn)    loginBtn.style.display  = 'none';
+      // Show user button, hide login
+      if (loginBtn)    { loginBtn.style.visibility = 'hidden'; }
       if (userBtn)     { userBtn.style.display = 'inline-flex'; if (userNameEl) userNameEl.textContent = name; }
       if (mobileLogin) mobileLogin.style.display = 'none';
       if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
+      if (pOverlay)    pOverlay.style.display = 'none';
+      if (tOverlay)    tOverlay.style.display = 'none';
 
-      // Hide overlays
-      if(pOverlay) pOverlay.style.display = 'none';
-      if(tOverlay) tOverlay.style.display = 'none';
-
-      // Load user avatar
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         const photoURL = snap.exists() ? snap.data()?.photoURL : null;
@@ -390,19 +637,20 @@
       } catch {
         setNavAvatar(user.photoURL, name);
       }
-      
-      // Dispatch event to start game engine
-      window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user: user } }));
+
+      if (!gameStarted) {
+        gameStarted = true;
+        window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user } }));
+      }
 
     } else {
-      if (loginBtn)    loginBtn.style.display  = '';
-      if (userBtn)     userBtn.style.display   = 'none';
+      if (loginBtn)    { loginBtn.style.visibility = 'visible'; }
+      if (userBtn)     userBtn.style.display = 'none';
       if (mobileLogin) mobileLogin.style.display = '';
-      if (mobileUser)  mobileUser.style.display  = 'none';
-      
-      // Show overlays
-      if(pOverlay) pOverlay.style.display = 'flex';
-      if(tOverlay) tOverlay.style.display = 'flex';
+      if (mobileUser)  mobileUser.style.display = 'none';
+      if (pOverlay)    { pOverlay.style.display = 'flex'; }
+      if (tOverlay)    { tOverlay.style.display = 'flex'; }
+      gameStarted = false;
     }
   });
 
@@ -436,30 +684,21 @@
   });
   window.addEventListener('resize', positionDropdown);
 
-  function adjustNavRight() {
-    const nav = document.getElementById('mainNav');
-    const loginBtn = document.getElementById('nav-login-btn-link');
-    const userBtn  = document.getElementById('nav-user-btn');
-    if (!nav) return;
-    if (window.innerWidth <= 900) { nav.style.paddingRight = ''; return; }
-    const authBtn = (userBtn && userBtn.style.display !== 'none') ? userBtn : loginBtn;
-    if (!authBtn) return;
-    const btnRect = authBtn.getBoundingClientRect();
-    const navRect = nav.getBoundingClientRect();
-    const overlap = navRect.right - btnRect.left;
-    const basePadding = 16;
-    if (overlap > 0) nav.style.paddingRight = (overlap + basePadding) + 'px';
-    else nav.style.paddingRight = basePadding + 'px';
-  }
-  adjustNavRight(); window.addEventListener('resize', adjustNavRight);
-  setTimeout(adjustNavRight, 500);
+  // Tab switching
+  document.querySelectorAll('.sim-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.sim-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sim-page').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
 
   if (localStorage.getItem('darkMode') === 'true') {
     document.documentElement.classList.add('dark');
   }
 </script>
 
-<!-- Game Logic -->
 <script src="game.js"></script>
 </body>
 </html>
