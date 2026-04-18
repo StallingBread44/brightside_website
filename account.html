@@ -538,7 +538,7 @@
 <!-- Firebase -->
 <script type="module">
   import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged, signOut, updateEmail, updateProfile }
+  import { getAuth, onAuthStateChanged, signOut, updateEmail, updateProfile, reauthenticateWithCredential, EmailAuthProvider }
                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc }
                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -569,7 +569,10 @@
     // Big profile avatar
     const pa = document.getElementById('profile-avatar');
     if (photoURL) {
-      pa.innerHTML = `<img src="${photoURL}" alt="Profile photo">`;
+      const img = document.createElement('img');
+      img.src = photoURL;
+      img.alt = 'Profile photo';
+      pa.replaceChildren(img);
     } else {
       pa.textContent = initials(navName);
     }
@@ -577,11 +580,20 @@
     const na = document.getElementById('nav-user-initials');
     if (na) {
       if (photoURL) {
-        na.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        const navImg = document.createElement('img');
+        navImg.src = photoURL;
+        navImg.alt = '';
+        navImg.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+        na.replaceChildren(navImg);
       } else {
         na.textContent = initials(navName).slice(0,1);
       }
     }
+  }
+
+  // ── Validate photo URLs before rendering ─────────────────────────
+  function isSafePhotoURL(url) {
+    return typeof url === 'string' && (url.startsWith('data:image/') || /^https:\/\//.test(url));
   }
 
   // ── Populate profile UI ──────────────────────────────────────────
@@ -589,7 +601,8 @@
     const name     = fsData?.name     || user.displayName || '';
     const email    = user.email       || '';
     const dob      = fsData?.dob      || '';
-    const photoURL = fsData?.photoURL || user.photoURL || '';
+    const rawURL   = fsData?.photoURL || user.photoURL || '';
+    const photoURL = isSafePhotoURL(rawURL) ? rawURL : '';
 
     const navName = name || email.split('@')[0];
 
@@ -826,7 +839,14 @@
 
     try {
       await updateProfile(user, { displayName: name });
-      if (email !== user.email) await updateEmail(user, email);
+      if (email !== user.email) {
+        // Re-authentication required before changing email to prevent session-hijack takeover
+        const currentPassword = window.prompt('To change your email, please confirm your current password:');
+        if (!currentPassword) { errEl.textContent = 'Password required to change email.'; btn.disabled = false; btn.textContent = 'Save changes'; return; }
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updateEmail(user, email);
+      }
       await setDoc(doc(db, 'users', user.uid), { name, email, dob }, { merge: true });
       const snap = await getDoc(doc(db, 'users', user.uid));
       populateProfile(auth.currentUser, snap.exists() ? snap.data() : {});
@@ -834,9 +854,11 @@
       setTimeout(() => window.cancelEdit(), 1200);
     } catch(e) {
       const msgs = {
-        'auth/requires-recent-login': 'Please sign out and sign back in to change your email.',
+        'auth/requires-recent-login': 'Please sign out and sign back in, then try again.',
         'auth/email-already-in-use':  'That email is already in use.',
         'auth/invalid-email':         'Please enter a valid email address.',
+        'auth/wrong-password':        'Incorrect password. Email not changed.',
+        'auth/invalid-credential':    'Incorrect password. Email not changed.',
       };
       errEl.textContent = msgs[e.code] || 'Something went wrong. Please try again.';
     } finally {
