@@ -5,3 +5,10 @@ venv
 walkthrough.md
 delete_stocks.py
 scripts/serviceAccountKey.json
+.env
+scripts/.env
+scripts/fetch_history.py
+scripts/requirements.txt
+scripts/update_prices.py
+scripts/delete_stocks.py
+scripts/

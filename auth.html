@@ -11,40 +11,14 @@
 
 <!-- Firebase SDKs -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { auth, db, onAuthStateChanged, doc, setDoc } from "./firebase-init.js";
   import {
-    getAuth,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signInWithPopup,
     GoogleAuthProvider,
-    onAuthStateChanged,
     updateProfile
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyCxXXEf9u-Gh4ORSFMvHfQOnQ65YeLSbXw",
-  authDomain: "website-bs-fbeab.firebaseapp.com",
-  projectId: "website-bs-fbeab",
-  storageBucket: "website-bs-fbeab.firebasestorage.app",
-  messagingSenderId: "995737362868",
-  appId: "1:995737362868:web:37c3e26b2f7bc8700012e1"
-};
-  // ─────────────────────────────────────────────────────────────────
-
-  const app      = initializeApp(firebaseConfig);
-  const auth     = getAuth(app);
-  const db       = getFirestore(app);
-
-  enableIndexedDbPersistence(db).catch((err) => {
-      if (err.code == 'failed-precondition') {
-          console.warn("Persistence failed: Multiple tabs open.");
-      } else if (err.code == 'unimplemented') {
-          console.warn("Persistence not supported by this browser.");
-      }
-  });
 
   const provider = new GoogleAuthProvider();
 

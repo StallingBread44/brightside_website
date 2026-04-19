@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── User profiles ──
+    // Users can only read/write their own profile document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Game state (portfolio, cash, holdings) ──
+    // Users can only read/write their own game state
+    match /game_state/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Stock market data (written by Admin SDK only) ──
+    // Anyone authenticated can READ live prices
+    // NO frontend writes allowed — only Admin SDK scripts write here
+    match /stocks/{ticker} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ── Stock history (written by Admin SDK only) ──
+    // Anyone authenticated can READ history for charts
+    // NO frontend writes allowed
+    match /stock_history/{ticker} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ── Deny everything else by default ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
