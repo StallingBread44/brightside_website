@@ -60,7 +60,7 @@
   /* ── PORTFOLIO LAYOUT ── */
   .portfolio-layout {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2rem;
     align-items: start;
   }
@@ -97,7 +97,8 @@
   .neg-change { color: #d32f2f; }
 
   /* PORTFOLIO TABLE */
-  .portfolio-table { width: 100%; border-collapse: collapse; text-align: left; }
+  .portfolio-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .portfolio-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 480px; }
   .portfolio-table th { font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.05em; color: #9ca3af; text-transform: uppercase; padding-bottom: 1rem; border-bottom: 1px solid rgba(43,66,36,0.1); }
   .portfolio-table td { padding: 0.9rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); font-size: 0.95rem; font-weight: 500; color: var(--forest); vertical-align: middle; }
   .portfolio-table tr:last-child td { border-bottom: none; }
@@ -167,7 +168,7 @@
   /* ── STOCKS PAGE ── */
   .stocks-layout {
     display: grid;
-    grid-template-columns: 1fr 420px;
+    grid-template-columns: minmax(0, 1fr) 420px;
     gap: 2rem;
     align-items: start;
   }
@@ -283,12 +284,48 @@
   html.dark .btn-hold-sell { background: rgba(211,47,47,0.15); color: #ef5350; }
 
   @media (max-width: 1100px) {
-    .stocks-layout { grid-template-columns: 1fr; }
-    .stock-detail-panel { position: static; }
+    .stocks-layout { grid-template-columns: minmax(0, 1fr); }
+    .stock-detail-panel { order: -1; position: static; }
   }
   @media (max-width: 900px) {
-    .portfolio-layout { grid-template-columns: 1fr; }
-    .simulator-wrapper { padding: 7rem 1.5rem 3rem; }
+    .portfolio-layout { grid-template-columns: minmax(0, 1fr); }
+    .simulator-wrapper { padding: 5.5rem 1rem 3rem; }
+  }
+  @media (max-width: 600px) {
+    .simulator-wrapper { padding: 5rem 0.75rem 2rem; }
+
+    /* Tabs: scrollable row, don't wrap */
+    .sim-tabs { gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+    .sim-tabs::-webkit-scrollbar { display: none; }
+    .sim-tab { font-size: 0.85rem; padding: 0.7rem 1.1rem; white-space: nowrap; flex-shrink: 0; }
+
+    /* Panels */
+    .game-panel { padding: 1.25rem; border-radius: 14px; }
+    .panel-title { font-size: 1.2rem; flex-wrap: wrap; gap: 0.5rem; }
+
+    /* Stats grid: 2 columns but smaller text */
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .stat-value { font-size: 1.35rem; }
+
+    /* Chart range toggles: scroll horizontally */
+    .chart-range-toggles { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+    .chart-range-toggles::-webkit-scrollbar { display: none; }
+
+    /* Portfolio table: make it scroll + reduce columns */
+    .portfolio-table th, .portfolio-table td { font-size: 0.8rem; padding: 0.7rem 0.4rem; }
+    .holding-actions { flex-direction: column; gap: 0.25rem; }
+    .btn-hold-buy, .btn-hold-sell { padding: 0.25rem 0.5rem; }
+
+    /* Stocks table */
+    .stocks-table td, .stocks-table th { font-size: 0.8rem; }
+
+    /* Stock detail */
+    .stock-detail-ticker { font-size: 1.5rem; }
+    .stock-detail-price { font-size: 1.7rem; }
+    .detail-stats-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Trade controls */
+    .trade-controls { gap: 0.75rem; }
   }
 
   /* Quick trade modal */
@@ -414,6 +451,7 @@
           </div>
 
           <div class="panel-title" style="font-size:1.2rem;margin-top:2rem;">Holdings</div>
+          <div class="portfolio-table-wrap">
           <table class="portfolio-table">
             <thead>
               <tr>
@@ -427,6 +465,7 @@
             </thead>
             <tbody id="holdings-body"></tbody>
           </table>
+          </div>
         </div>
       </div>
 

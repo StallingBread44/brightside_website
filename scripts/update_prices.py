@@ -45,16 +45,49 @@ def get_top_tickers():
     try:
         url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
         headers = {'User-Agent': 'Mozilla/5.0'}
-        html = requests.get(url, headers=headers).text
-        tables = pd.read_html(html)
-        df = tables[0]
+        
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        
+        # Try pandas first with explicit parser
+        try:
+            tables = pd.read_html(response.text, flavor='lxml')
+            df = tables[0]
+        except:
+            # Fallback to html5lib if lxml fails
+            try:
+                tables = pd.read_html(response.text, flavor='html5lib')
+                df = tables[0]
+            except:
+                # Manual parsing with BeautifulSoup as last resort
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, 'html.parser')
+                table = soup.find('table', {'id': 'constituents'})
+                
+                tickers = []
+                names = []
+                
+                for row in table.find_all('tr')[1:]:  # Skip header
+                    cols = row.find_all('td')
+                    if len(cols) >= 2:
+                        ticker = cols[0].text.strip().replace('.', '-')
+                        name = cols[1].text.strip()
+                        tickers.append(ticker)
+                        names.append(name)
+                
+                ticker_map = dict(zip(tickers, names))
+                print(f"Found {len(ticker_map)} tickers (via BeautifulSoup).")
+                return ticker_map
+        
         tickers = df['Symbol'].str.replace('.', '-').tolist()
         names = df['Security'].tolist()
         ticker_map = dict(zip(tickers, names))
         print(f"Found {len(ticker_map)} tickers.")
         return ticker_map
+        
     except Exception as e:
         print(f"Error fetching tickers: {e}")
+        print("Using fallback ticker list...")
         return {
             "AAPL": "Apple Inc.", "MSFT": "Microsoft", "JNJ": "Johnson & Johnson",
             "V": "Visa", "PG": "Procter & Gamble", "JPM": "JPMorgan Chase",
