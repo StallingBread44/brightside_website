@@ -701,6 +701,8 @@ function setupTradeControls() {
     document.getElementById('btn-sell')?.addEventListener('click', () => processTrade('SELL'));
 }
 
+let tradeInFlight = false;
+
 async function processTrade(type, ticker, qty) {
     // If called without args, get from DOM
     if (!ticker) {
@@ -713,37 +715,50 @@ async function processTrade(type, ticker, qty) {
             return;
         }
         const qtyStr = document.getElementById('trade-qty').value;
-        qty = parseInt(qtyStr);
+        qty = Number(qtyStr);
         ticker = selectedTicker;
 
-        if (isNaN(qty) || qty <= 0) {
-            showTradeMsg('trade-error', 'Enter a valid quantity.', false);
+        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000000) {
+            showTradeMsg('trade-error', 'Enter a valid integer quantity (max 10m).', false);
             return;
         }
-    }
-
-    const price = marketData[ticker]?.price;
-    if (!price) return;
-    const cost = price * qty;
-
-    if (!holdings[ticker]) holdings[ticker] = { shares: 0, avgCost: 0 };
-    const holding = holdings[ticker];
-
-    if (type === 'BUY') {
-        if (cost > cash) return { error: 'Insufficient buying power.' };
-        cash -= cost;
-        const existingVal = holding.shares * holding.avgCost;
-        holding.shares += qty;
-        holding.avgCost = (existingVal + cost) / holding.shares;
     } else {
-        if (holding.shares < qty) return { error: 'Insufficient shares to sell.' };
-        cash += cost;
-        holding.shares -= qty;
-        if (holding.shares === 0) delete holdings[ticker];
+        qty = Number(qty);
+        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000000) return { error: 'Invalid quantity.' };
     }
 
-    await saveGameState();
-    return { success: true };
+    if (tradeInFlight) return { error: 'Transaction in progress, please wait...' };
+    tradeInFlight = true;
+
+    try {
+        const price = marketData[ticker]?.price;
+        if (!price) return { error: 'Market data unavailable.' };
+        const cost = price * qty;
+        
+        // Prevent floating point anomalies
+        if (cost < 0 || isNaN(cost)) return { error: 'Invalid transaction calculation.' };
+
+        if (!holdings[ticker]) holdings[ticker] = { shares: 0, avgCost: 0 };
+        const holding = holdings[ticker];
+
+        if (type === 'BUY') {
+            if (cost > cash) return { error: 'Insufficient buying power.' };
+            cash -= cost;
+            const existingVal = holding.shares * holding.avgCost;
+            holding.shares += qty;
+            holding.avgCost = (existingVal + cost) / holding.shares;
+        } else {
+            if (holding.shares < qty) return { error: 'Insufficient shares to sell.' };
+            cash += cost;
+            holding.shares -= qty;
+            if (holding.shares === 0) delete holdings[ticker];
+        }
+
+        await saveGameState();
+        return { success: true };
+    } finally {
+        tradeInFlight = false;
+    }
 }
 
 async function processTradeFromPanel() {

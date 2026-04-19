@@ -60,17 +60,27 @@
     return map[code] || "Something went wrong. Please try again.";
   }
 
+  let submitInFlight = false;
+
   window.handleSubmit = async () => {
+    if (submitInFlight) return;
     const email    = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     const btn      = document.getElementById("submit-btn");
     const mode     = document.getElementById("auth-mode").dataset.mode;
     if (!email || !password) { showError("Please fill in all fields."); return; }
+    
+    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { showError("Please enter a valid email length."); return; }
+    if (password.length > 128) { showError("Password too long."); return; }
+
     if (mode === "signup") {
       const name = document.getElementById("full-name").value.trim();
       const dob  = document.getElementById("dob").value;
       if (!name || !dob) { showError("Please fill in all fields."); return; }
+      if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { showError("Please enter a valid name (letters only)."); return; }
     }
+    
+    submitInFlight = true;
     setLoading(btn, true);
     try {
       if (mode === "login") {
@@ -87,10 +97,13 @@
     } catch (e) {
       showError(friendlyError(e.code));
       setLoading(btn, false);
+      submitInFlight = false;
     }
   };
 
   window.handleGoogle = async () => {
+    if (submitInFlight) return;
+    submitInFlight = true;
     const btn = document.getElementById("google-btn");
     setLoading(btn, true);
     try {
@@ -98,6 +111,7 @@
     } catch (e) {
       showError(friendlyError(e.code));
       setLoading(btn, false);
+      submitInFlight = false;
     }
   };
 </script>

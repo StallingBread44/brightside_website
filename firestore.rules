@@ -3,15 +3,25 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── User profiles ──
-    // Users can only read/write their own profile document
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && (request.resource.data.name == null || (request.resource.data.name is string && request.resource.data.name.size() <= 60))
+                   && (request.resource.data.email == null || (request.resource.data.email is string && request.resource.data.email.size() <= 100))
+                   && (request.resource.data.dob == null || request.resource.data.dob is string)
+                   && (request.resource.data.createdAt == null || request.resource.data.createdAt is string)
+                   && (request.resource.data.photoURL == null || request.resource.data.photoURL is string);
     }
 
     // ── Game state (portfolio, cash, holdings) ──
-    // Users can only read/write their own game state
     match /game_state/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.data.keys().hasOnly(['cash', 'holdings'])
+                   && request.resource.data.cash is number
+                   && request.resource.data.cash >= -0.01 // allow tiny floating point inaccuracy around 0
+                   && request.resource.data.cash <= 10000000000 // reasonable upper bound preventing overflow
+                   && (request.resource.data.holdings == null || request.resource.data.holdings is map);
     }
 
     // ── Stock market data (written by Admin SDK only) ──

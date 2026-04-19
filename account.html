@@ -795,8 +795,10 @@
     document.getElementById('view-mode').style.display = '';
   };
 
-  // ── Save profile ─────────────────────────────────────────────────
+  let saveInFlight = false;
+
   window.saveProfile = async () => {
+    if (saveInFlight) return;
     const user = auth.currentUser;
     if (!user) return;
 
@@ -808,6 +810,10 @@
     const okEl  = document.getElementById('account-success');
 
     if (!name || !email) { errEl.textContent = 'Name and email are required.'; return; }
+    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { errEl.textContent = 'Please enter a valid email length.'; return; }
+    if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { errEl.textContent = 'Please enter a valid name (letters only).'; return; }
+
+    saveInFlight = true;
 
     btn.disabled = true; btn.textContent = 'Saving…';
     errEl.textContent = ''; okEl.textContent = '';
@@ -829,6 +835,7 @@
       errEl.textContent = msgs[e.code] || 'Something went wrong. Please try again.';
     } finally {
       btn.disabled = false; btn.textContent = 'Save changes';
+      saveInFlight = false;
     }
   };
 </script>
