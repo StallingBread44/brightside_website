@@ -31,24 +31,54 @@ history_written_today = False
 current_date_str = ""
 
 def get_nyse_tickers():
-    """Fetches all active US tickers using yahoo_fin."""
+    """Fetches all active US tickers using yahoo_fin with strict validation."""
     print("Fetching active US tickers...")
     try:
-        # yahoo_fin uses tickers_other() for NYSE and others, tickers_nasdaq() for NASDAQ
         other = si.tickers_other()
         nasdaq = si.tickers_nasdaq()
         tickers = list(set(other + nasdaq))
         
-        # Clean and discard invalid tickers
+        # Validate tickers - reject invalid ones entirely
         clean_tickers = []
+        invalid_count = 0
+        
         for t in tickers:
             if not isinstance(t, str) or len(t) == 0:
+                invalid_count += 1
                 continue
-            # yfinance uses '-' instead of '.' for classes
-            clean = t.strip().replace('.', '-')
+            
+            # First strip whitespace
+            t = t.strip()
+
+            # REJECT if contains invalid special characters (preferred share series, etc.)
+            if '$' in t or '^' in t or '~' in t or '|' in t:
+                invalid_count += 1
+                continue
+
+            # Standard cleanup: replace . with - (for class shares like BRK-A)
+            clean = t.replace('.', '-')
+
+            # REJECT warrants (-W), units (-U), and rights (-R) — not regular
+            # equities and almost always return 404s on Yahoo Finance
+            if clean.endswith('-W') or clean.endswith('-U') or clean.endswith('-R'):
+                invalid_count += 1
+                continue
+
+            # Validate length: most US tickers are 1-5 chars, max 10 is reasonable
+            if len(clean) > 10 or len(clean) == 0:
+                invalid_count += 1
+                continue
+
+            # Final check: only alphanumeric and hyphens allowed
+            if not all(c.isalnum() or c == '-' for c in clean):
+                invalid_count += 1
+                continue
+
             clean_tickers.append(clean)
-        print(f"Found {len(clean_tickers)} total US tickers.")
+        
+        print(f"Found {len(clean_tickers)} valid US tickers (discarded {invalid_count} invalid).")
         return clean_tickers
+        
     except Exception as e:
         print(f"Error fetching tickers: {e}")
         print("Using fallback ticker list...")
@@ -82,7 +112,7 @@ def is_market_open_cst():
 
 
 def market_closed_for_day_cst():
-    """Returns True if the current time is essentially strictly after 3:00 PM CST (End of Day)."""
+    """Returns True if the current time is strictly after 3:00 PM CST (End of Day)."""
     cst = pytz.timezone('US/Central')
     now = datetime.now(cst)
     market_close_time = datetime.strptime("15:00", "%H:%M").time()
@@ -176,21 +206,30 @@ def main_loop():
                     try:
                         t = data.tickers[ticker]
                         
-                        # Fetch stock info, this single properties call implicitly caches what it can
+                        # Fetch stock info
                         info = t.info
                         
-                        # Grab the price safely natively if possible to avoid history HTTP calls
+                        # Skip if info is empty or None
+                        if not info:
+                            continue
+                        
+                        # Grab the price safely
                         cp = 0.0
-                        if 'currentPrice' in info: cp = safe_float(info['currentPrice'])
-                        elif 'regularMarketPrice' in info: cp = safe_float(info['regularMarketPrice'])
+                        if 'currentPrice' in info: 
+                            cp = safe_float(info['currentPrice'])
+                        elif 'regularMarketPrice' in info: 
+                            cp = safe_float(info['regularMarketPrice'])
                         
                         # Fallback to daily history if 'info' lacks immediate price
                         if cp == 0.0:
-                            hist = t.history(period="1d")
-                            if not hist.empty:
-                                cp = safe_float(hist['Close'].iloc[-1])
-                            else:
-                                continue # Unable to get any price, skip upsert
+                            try:
+                                hist = t.history(period="1d")
+                                if not hist.empty:
+                                    cp = safe_float(hist['Close'].iloc[-1])
+                                else:
+                                    continue  # Unable to get any price, skip this ticker
+                            except Exception:
+                                continue  # Skip if history fetch fails
                                 
                         prev_close = safe_float(info.get('previousClose') or cp)
                         change = round(cp - prev_close, 2)
@@ -199,41 +238,49 @@ def main_loop():
                         vol = info.get('volume')
                         if vol is None or pd.isna(vol):
                             vol = 0
-                            
-                        upserts.append({
-                            "symbol": ticker,
-                            "name": info.get('shortName', ticker),
-                            "price": cp,
-                            "change": change,
-                            "changePercent": change_pct,
-                            "volume": int(vol),
-                            "dayHigh": safe_float(info.get('dayHigh')),
-                            "dayLow": safe_float(info.get('dayLow')),
-                            "high52w": safe_float(info.get('fiftyTwoWeekHigh')),
-                            "low52w": safe_float(info.get('fiftyTwoWeekLow')),
-                            "bid": safe_float(info.get('bid')),
-                            "ask": safe_float(info.get('ask')),
-                            "updatedAt": "now()"
-                        })
+                        
+                        # Only upsert if we have a valid price
+                        if cp > 0:
+                            upserts.append({
+                                "symbol": ticker,
+                                "name": info.get('shortName', ticker),
+                                "price": cp,
+                                "change": change,
+                                "changePercent": change_pct,
+                                "volume": int(vol),
+                                "dayHigh": safe_float(info.get('dayHigh')),
+                                "dayLow": safe_float(info.get('dayLow')),
+                                "high52w": safe_float(info.get('fiftyTwoWeekHigh')),
+                                "low52w": safe_float(info.get('fiftyTwoWeekLow')),
+                                "bid": safe_float(info.get('bid')),
+                                "ask": safe_float(info.get('ask')),
+                                "updatedAt": "now()"
+                            })
+                        
+                    except KeyError:
+                        # Ticker not found in response
+                        pass
                     except Exception as e:
-                        # Skip strictly broken individual tickers directly mapped from yahoo fin
+                        # Skip individual tickers that fail
                         pass
                         
                 if upserts:
                     supabase.table("stocks").upsert(upserts).execute()
                     print(f"  Upserted batch {i//BATCH_SIZE + 1} ({len(upserts)} records) - Sleeping {sleep_time}s")
+                else:
+                    print(f"  Batch {i//BATCH_SIZE + 1} had no valid data - Sleeping {sleep_time}s")
                     
             except Exception as e:
                 print(f"  Batch Request Error: {e}")
                 
             time.sleep(sleep_time)
             
-            # Recalculate market state mid-loop in case it flips during this 10 min cycle
+            # Recalculate market state mid-loop in case it flips during this cycle
             now_cst = datetime.now(cst)
             market_open = is_market_open_cst()
             sleep_time = 5 if market_open else 30
 
-        # After finishing a FULL PASS over all 6000 stocks...
+        # After finishing a FULL PASS over all stocks...
         # Check if the market HAS CLOSED for the day and we need to lock in the history point
         if market_closed_for_day_cst() and not history_written_today:
             write_history_for_all(tickers)

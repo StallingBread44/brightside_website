@@ -9,22 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- Firebase SDKs -->
+<!-- Supabase Auth -->
 <script type="module">
-  import { auth, db, onAuthStateChanged, doc, setDoc } from "./firebase-init.js";
-  import {
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    GoogleAuthProvider,
-    updateProfile
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { supabase } from "./supabase-init.js";
 
-  const provider = new GoogleAuthProvider();
-
-  onAuthStateChanged(auth, user => {
-    if (user) window.location.href = "index.html";
-  });
+  if (supabase) {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) window.location.href = "index.html";
+    });
+  }
 
   function showError(msg) {
     const el = document.getElementById("error-msg");
@@ -46,56 +39,70 @@
       : btn.dataset.label;
   }
 
-  function friendlyError(code) {
-    const map = {
-      "auth/user-not-found":        "No account found with this email.",
-      "auth/wrong-password":        "Incorrect password. Try again.",
-      "auth/invalid-credential":    "Incorrect email or password.",
-      "auth/email-already-in-use":  "An account with this email already exists.",
-      "auth/weak-password":         "Password must be at least 6 characters.",
-      "auth/invalid-email":         "Please enter a valid email address.",
-      "auth/popup-closed-by-user":  "Google sign-in was cancelled.",
-      "auth/network-request-failed":"Network error. Check your connection.",
-    };
-    return map[code] || "Something went wrong. Please try again.";
+  function friendlyError(err) {
+    // Supabase returns descriptive error messages in err.message
+    const msg = err.message || "";
+    if (msg.includes("Invalid login credentials")) return "Incorrect email or password.";
+    if (msg.includes("User already registered")) return "An account with this email already exists.";
+    if (msg.includes("Password should be at least 6 characters")) return "Password must be at least 6 characters.";
+    return msg || "Something went wrong. Please try again.";
   }
 
   let submitInFlight = false;
 
   window.handleSubmit = async () => {
     if (submitInFlight) return;
+    if (!supabase) {
+      showError("Supabase connection not configured. Please add your keys to supabase-init.js");
+      return;
+    }
     const email    = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
     const btn      = document.getElementById("submit-btn");
     const mode     = document.getElementById("auth-mode").dataset.mode;
     if (!email || !password) { showError("Please fill in all fields."); return; }
     
-    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { showError("Please enter a valid email length."); return; }
+    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { showError("Please enter a valid email."); return; }
     if (password.length > 128) { showError("Password too long."); return; }
 
+    let name = "";
+    let dob = "";
     if (mode === "signup") {
-      const name = document.getElementById("full-name").value.trim();
-      const dob  = document.getElementById("dob").value;
+      name = document.getElementById("full-name").value.trim();
+      dob  = document.getElementById("dob").value;
       if (!name || !dob) { showError("Please fill in all fields."); return; }
-      if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { showError("Please enter a valid name (letters only)."); return; }
+      if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { showError("Please enter a valid name."); return; }
     }
     
     submitInFlight = true;
     setLoading(btn, true);
     try {
       if (mode === "login") {
-        await signInWithEmailAndPassword(auth, email, password);
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
       } else {
-        const name = document.getElementById("full-name").value.trim();
-        const dob  = document.getElementById("dob").value;
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(cred.user, { displayName: name });
-        await setDoc(doc(db, "users", cred.user.uid), {
-          name, dob, email, createdAt: new Date().toISOString()
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+              dob: dob
+            }
+          }
         });
+        if (error) throw error;
+        
+        // Create profile record in public.profiles
+        if (data.user) {
+          const { error: profileErr } = await supabase
+            .from('profiles')
+            .insert([{ id: data.user.id, full_name: name, dob: dob, email: email }]);
+          if (profileErr) console.warn("Could not create profile record:", profileErr);
+        }
       }
     } catch (e) {
-      showError(friendlyError(e.code));
+      showError(friendlyError(e));
       setLoading(btn, false);
       submitInFlight = false;
     }
@@ -103,13 +110,23 @@
 
   window.handleGoogle = async () => {
     if (submitInFlight) return;
+    if (!supabase) {
+      showError("Supabase connection not configured. Please add your keys to supabase-init.js");
+      return;
+    }
     submitInFlight = true;
     const btn = document.getElementById("google-btn");
     setLoading(btn, true);
     try {
-      await signInWithPopup(auth, provider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/index.html'
+        }
+      });
+      if (error) throw error;
     } catch (e) {
-      showError(friendlyError(e.code));
+      showError(friendlyError(e));
       setLoading(btn, false);
       submitInFlight = false;
     }

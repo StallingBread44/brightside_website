@@ -537,10 +537,9 @@
   <div class="footer-bottom"><span>© 2025 Brightside Finance Foundation</span></div>
 </footer>
 
-<!-- Firebase -->
+<!-- Supabase -->
 <script type="module">
-  import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc } from "./firebase-init.js";
-  import { updateEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { supabase } from "./supabase-init.js";
 
   // ── Helpers ──────────────────────────────────────────────────────
   function initials(name) {
@@ -573,11 +572,11 @@
   }
 
   // ── Populate profile UI ──────────────────────────────────────────
-  function populateProfile(user, fsData) {
-    const name     = fsData?.name     || user.displayName || '';
-    const email    = user.email       || '';
-    const dob      = fsData?.dob      || '';
-    const photoURL = fsData?.photoURL || user.photoURL || '';
+  function populateProfile(user, profileData) {
+    const name     = profileData?.full_name || user.user_metadata?.full_name || '';
+    const email    = user.email || '';
+    const dob      = profileData?.dob || user.user_metadata?.dob || '';
+    const photoURL = profileData?.photo_url || user.user_metadata?.avatar_url || '';
 
     const navName = name || email.split('@')[0];
 
@@ -603,35 +602,24 @@
     document.getElementById('edit-dob').value   = dob;
   }
 
-  // ── Auth state ───────────────────────────────────────────────────
-  onAuthStateChanged(auth, async user => {
-    const loginBtn    = document.getElementById('nav-login-btn-link');
-    const userBtn     = document.getElementById('nav-user-btn');
-    const mobileLogin = document.getElementById('mobile-login-link');
-    const mobileUser  = document.getElementById('mobile-user-link');
+  // ── Nav & Auth ──
+  import { initNavAuth } from "./nav-auth.js";
 
-    if (user) {
-      if (loginBtn)    loginBtn.style.display    = 'none';
-      if (userBtn)     userBtn.style.display     = 'inline-flex';
-      if (mobileLogin) mobileLogin.style.display = 'none';
-      if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = user.displayName || user.email.split('@')[0]; }
-
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        populateProfile(user, snap.exists() ? snap.data() : {});
-      } catch(e) {
-        populateProfile(user, {});
+  initNavAuth({
+    onAuthStateChange: async (event, session) => {
+      const user = session?.user;
+      if (user) {
+        try {
+          const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          populateProfile(user, data || {});
+        } catch(e) {
+          populateProfile(user, {});
+        }
+      } else {
+        window.location.href = 'auth.html';
       }
-    } else {
-      window.location.href = 'auth.html';
     }
   });
-
-  // ── Sign out ─────────────────────────────────────────────────────
-  window.navSignOut = async () => {
-    await signOut(auth);
-    window.location.href = 'index.html';
-  };
 
   // ── Avatar: open crop modal when file chosen ────────────────────
   let _cropImg = null, _cropScale = 1, _cropX = 0, _cropY = 0,
@@ -766,14 +754,16 @@
     saveBtn.disabled = true;
 
     try {
+    try {
       // Export the canvas as JPEG
       const canvas = document.getElementById('crop-canvas');
       const base64 = canvas.toDataURL('image/jpeg', 0.88);
 
-      await setDoc(doc(db, 'users', user.uid), { photoURL: base64 }, { merge: true });
-      await updateProfile(user, { photoURL: base64 });
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      populateProfile(user, snap.exists() ? snap.data() : {});
+      await supabase.from('profiles').update({ photo_url: base64 }).eq('id', user.id);
+      await supabase.auth.updateUser({ data: { avatar_url: base64 } });
+      
+      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      populateProfile(user, data || {});
     } catch(err) {
       console.error('Avatar save failed:', err);
       alert('Failed to save photo. Please try again.');
@@ -799,7 +789,7 @@
 
   window.saveProfile = async () => {
     if (saveInFlight) return;
-    const user = auth.currentUser;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const name  = document.getElementById('edit-name').value.trim();
@@ -810,8 +800,8 @@
     const okEl  = document.getElementById('account-success');
 
     if (!name || !email) { errEl.textContent = 'Name and email are required.'; return; }
-    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { errEl.textContent = 'Please enter a valid email length.'; return; }
-    if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { errEl.textContent = 'Please enter a valid name (letters only).'; return; }
+    if (email.length > 100 || !/^\S+@\S+\.\S+$/.test(email)) { errEl.textContent = 'Please enter a valid email.'; return; }
+    if (name.length > 60 || !/^[a-zA-Z\s\-']+$/.test(name)) { errEl.textContent = 'Please enter a valid name.'; return; }
 
     saveInFlight = true;
 
@@ -819,67 +809,32 @@
     errEl.textContent = ''; okEl.textContent = '';
 
     try {
-      await updateProfile(user, { displayName: name });
-      if (email !== user.email) await updateEmail(user, email);
-      await setDoc(doc(db, 'users', user.uid), { name, email, dob }, { merge: true });
-      const snap = await getDoc(doc(db, 'users', user.uid));
-      populateProfile(auth.currentUser, snap.exists() ? snap.data() : {});
+      const updates = {
+        email: email,
+        data: { full_name: name, dob: dob }
+      };
+      
+      const { error: authErr } = await supabase.auth.updateUser(updates);
+      if (authErr) throw authErr;
+
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .upsert({ id: user.id, full_name: name, email, dob });
+      if (profileErr) throw profileErr;
+
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      populateProfile(user, profile || {});
+      
       okEl.textContent = 'Profile updated successfully.';
       setTimeout(() => window.cancelEdit(), 1200);
     } catch(e) {
-      const msgs = {
-        'auth/requires-recent-login': 'Please sign out and sign back in to change your email.',
-        'auth/email-already-in-use':  'That email is already in use.',
-        'auth/invalid-email':         'Please enter a valid email address.',
-      };
-      errEl.textContent = msgs[e.code] || 'Something went wrong. Please try again.';
+      errEl.textContent = e.message || 'Something went wrong. Please try again.';
     } finally {
       btn.disabled = false; btn.textContent = 'Save changes';
       saveInFlight = false;
     }
   };
 </script>
-
-<script>
-  function positionDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    if (!btn || !dd) return;
-
-    const rect = btn.getBoundingClientRect();
-
-    dd.style.position = 'fixed';
-    dd.style.left = rect.left + rect.width / 2 + 'px';
-    dd.style.top = rect.bottom + 'px';
-    dd.style.transform = 'translateX(-50%)';
-  }
-
-  function toggleDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    btn.classList.toggle('open');
-    dd.classList.toggle('open');
-
-    if (dd.classList.contains('open')) {
-      positionDropdown();
-    }
-  }
-
-  // Close on outside click
-  document.addEventListener('click', e => {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
-      btn.classList.remove('open');
-      dd.classList.remove('open');
-    }
-  });
-
-  // Keep dropdown aligned on resize
-  window.addEventListener('resize', positionDropdown);
 
   // Dark mode init
   if (localStorage.getItem('darkMode') === 'true') {

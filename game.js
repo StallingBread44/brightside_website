@@ -1,6 +1,5 @@
 let currentUser = null;
-let db = null;
-let fModules = null;
+let supabase = null;
 
 // Game State
 let cash = 100000.0;
@@ -24,7 +23,10 @@ let qmTicker = null;
 let qmType = null; // 'BUY' | 'SELL'
 
 // Initialization
+let initialized = false;
 function init() {
+    if (initialized) return;
+
     // 1. Try to load from Local Cache (Instant Paint)
     const cachedState = localStorage.getItem('game_state');
     if (cachedState) {
@@ -46,22 +48,21 @@ function init() {
         } catch(e) { console.warn("Market cache corrupt."); }
     }
 
-    // 2. Setup Firebase
-    if (!window.db || !window.firebaseModules) {
+    // 2. Wait for Supabase
+    if (!window.supabase) {
         setTimeout(init, 50);
         return;
     }
     
-    db = window.db;
-    fModules = window.firebaseModules;
-    console.log("Simulator logic initialized. Syncing with Firestore...");
+    supabase = window.supabase;
+    console.log("Simulator logic initialized. Syncing with Supabase...");
+    initialized = true;
 
     loadMarketData();
     setupRangeToggles();
     initCharts();
     setupStocksPage();
     setupSearch(); 
-    setupTradeControls();
 }
 
 // Start init on load
@@ -78,87 +79,125 @@ window.addEventListener('GameAuthReady', async (e) => {
 });
 
 async function loadGameState() {
-    const { doc, getDoc, setDoc, onSnapshot } = fModules;
-    const userDocRef = doc(db, 'game_state', currentUser.uid);
-    const snap = await getDoc(userDocRef);
+    const { data, error } = await supabase
+        .from('game_state')
+        .select('cash, holdings')
+        .eq('uid', currentUser.id)
+        .single();
 
-    if (snap.exists()) {
-        const data = snap.data();
+    if (data) {
         cash = data.cash ?? 100000.0;
         holdings = data.holdings || {};
     } else {
+        // Initial state for new user
         cash = 100000.0;
         holdings = {};
-        await setDoc(userDocRef, { cash, holdings });
+        await supabase.from('game_state').insert([{ uid: currentUser.id, cash, holdings }]);
     }
 
-    onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            cash = data.cash ?? 100000.0;
-            holdings = data.holdings || {};
-            
-            // Sync to local cache
-            localStorage.setItem('game_state', JSON.stringify({ cash, holdings }));
-            
-            renderDashboard();
-        }
-    }, (error) => {
-        console.error("Firebase user snapshot error:", error);
-    });
+    renderDashboard();
+
+    // Subscribe to portfolio changes
+    supabase
+        .channel('game_state_updates')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'game_state', 
+            filter: `uid=eq.${currentUser.id}` 
+        }, payload => {
+            if (payload.new) {
+                cash = payload.new.cash ?? 100000.0;
+                holdings = payload.new.holdings || {};
+                localStorage.setItem('game_state', JSON.stringify({ cash, holdings }));
+                renderDashboard();
+            }
+        })
+        .subscribe();
 }
 
-function loadMarketData() {
-    const { collection, onSnapshot } = fModules;
-    
-    // Subscribe to the 'stocks' collection for live market data only.
-    // History (prices array) lives in the separate 'stock_history' collection
-    // and is fetched on-demand when charting.
-    onSnapshot(collection(db, 'stocks'), (snapshot) => {
-        if (snapshot.empty) {
-            console.warn("Firestore 'stocks' collection is empty. Market data unavailable.");
-        } else {
-            console.log(`[Live Sync] Received update for ${snapshot.size} stocks.`);
-            const liteCache = {};
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                marketData[doc.id] = data;
-                
-                // Lite cache for instant paint on next reload
-                liteCache[doc.id] = {
-                    name: data.name,
-                    price: data.price,
-                    change: data.change,
-                    changePercent: data.changePercent,
-                    volume: data.volume
+async function loadMarketData() {
+    // Paginated fetch — load 500 rows per page to avoid timeout on 6000+ row table
+    const PAGE_SIZE = 500;
+    let from = 0;
+    let keepGoing = true;
+
+    while (keepGoing) {
+        const { data, error } = await supabase
+            .from('stocks')
+            .select('*')
+            .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+            console.error("Supabase stocks fetch error:", error);
+            break;
+        }
+
+        if (data && data.length > 0) {
+            console.log(`[Initial Sync] Received ${data.length} stocks (offset ${from}).`);
+            const liteCache = JSON.parse(localStorage.getItem('market_data_lite') || '{}');
+            data.forEach(row => {
+                marketData[row.symbol] = row;
+                liteCache[row.symbol] = {
+                    name: row.name,
+                    price: row.price,
+                    change: row.change,
+                    changePercent: row.changePercent,
+                    volume: row.volume,
+                    dayHigh: row.dayHigh,
+                    dayLow: row.dayLow,
+                    high52w: row.high52w,
+                    low52w: row.low52w,
+                    bid: row.bid,
+                    ask: row.ask
                 };
             });
             localStorage.setItem('market_data_lite', JSON.stringify(liteCache));
-        }
 
-        // Refresh all observers
-        renderDashboard();
-        renderStocksTable();
-        
-        // Ensure active detail panels show the latest prices immediately
-        if (selectedTicker) renderActiveStock(selectedTicker);
-        if (detailTicker) renderDetailPanel(detailTicker);
-        
-    }, (error) => {
-        console.error("Firebase stocks database error:", error);
-    });
+            // Render after each page so UI updates progressively
+            renderDashboard();
+            renderStocksTable();
+
+            from += PAGE_SIZE;
+            keepGoing = data.length === PAGE_SIZE; // stop when last page is smaller
+        } else {
+            keepGoing = false;
+            // Ensure we still render default portfolio values (e.g. $100,000 cash) if market is empty
+            if (from === 0) {
+                renderDashboard();
+                renderStocksTable();
+            }
+        }
+    }
+
+    // Subscribe to all price updates
+    supabase
+        .channel('public:stocks')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'stocks' }, payload => {
+            const updated = payload.new;
+            if (updated) {
+                marketData[updated.symbol] = updated;
+
+                // Refresh relevant UI
+                renderDashboard();
+                renderStocksTable();
+                if (selectedTicker === updated.symbol) renderActiveStock(updated.symbol);
+                if (detailTicker === updated.symbol) renderDetailPanel(updated.symbol);
+            }
+        })
+        .subscribe();
 }
 
-/**
- * Fetch price history on-demand from the 'stock_history' collection.
- * Caches results locally so we only hit Firestore once per ticker per session.
- */
 async function fetchStockHistory(ticker) {
     if (historyCache[ticker]) return historyCache[ticker];
     try {
-        const { doc, getDoc } = fModules;
-        const snap = await getDoc(doc(db, 'stock_history', ticker));
-        const prices = snap.exists() ? (snap.data().prices || []) : [];
+        const { data, error } = await supabase
+            .from('stock_history')
+            .select('prices')
+            .eq('symbol', ticker)
+            .single();
+            
+        const prices = data ? (data.prices || []) : [];
         historyCache[ticker] = prices;
         return prices;
     } catch (e) {
@@ -167,11 +206,15 @@ async function fetchStockHistory(ticker) {
     }
 }
 
-
 async function saveGameState() {
-    const { doc, setDoc } = fModules;
-    const userDocRef = doc(db, 'game_state', currentUser.uid);
-    await setDoc(userDocRef, { cash, holdings }, { merge: true });
+    const { error } = await supabase
+        .from('game_state')
+        .upsert({ 
+            uid: currentUser.id, 
+            cash: cash, 
+            holdings: holdings 
+        });
+    if (error) console.error("Error saving game state:", error);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -448,13 +491,8 @@ async function updateDetailChart(ticker) {
     detailChart.data.labels = filtered.map(d => d.date);
     detailChart.data.datasets[0].data = filtered.map(d => d.price);
 
-    const first = filtered[0].price;
-    const last = filtered[filtered.length - 1].price;
-    const color = last >= first ? '#2979ff' : '#d32f2f';
-    const bg = last >= first ? 'rgba(41, 121, 255, 0.12)' : 'rgba(211, 47, 47, 0.1)';
-
-    detailChart.data.datasets[0].borderColor = color;
-    detailChart.data.datasets[0].backgroundColor = bg;
+    detailChart.data.datasets[0].borderColor = '#2b4224'; // forest green
+    detailChart.data.datasets[0].backgroundColor = 'rgba(237, 240, 228, 0.7)'; // cream
     detailChart.update();
 }
 
@@ -540,7 +578,7 @@ function initDetailChart() {
 
     detailChart = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: 'Price', data: [], fill: true, borderColor: '#2979ff', backgroundColor: 'rgba(41, 121, 255, 0.12)', borderWidth: 2 }] },
+        data: { labels: [], datasets: [{ label: 'Price', data: [], fill: true, borderColor: '#2b4224', backgroundColor: 'rgba(237, 240, 228, 0.7)', borderWidth: 2, pointRadius: 0 }] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
@@ -704,29 +742,6 @@ function setupTradeControls() {
 let tradeInFlight = false;
 
 async function processTrade(type, ticker, qty) {
-    // If called without args, get from DOM
-    if (!ticker) {
-        const errorEl = document.getElementById('trade-error');
-        errorEl.style.display = 'none';
-        errorEl.style.color = '#d32f2f';
-
-        if (!selectedTicker || !marketData[selectedTicker]) {
-            showTradeMsg('trade-error', 'Select a stock first.', false);
-            return;
-        }
-        const qtyStr = document.getElementById('trade-qty').value;
-        qty = Number(qtyStr);
-        ticker = selectedTicker;
-
-        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000000) {
-            showTradeMsg('trade-error', 'Enter a valid integer quantity (max 10m).', false);
-            return;
-        }
-    } else {
-        qty = Number(qty);
-        if (!Number.isInteger(qty) || qty <= 0 || qty > 10000000) return { error: 'Invalid quantity.' };
-    }
-
     if (tradeInFlight) return { error: 'Transaction in progress, please wait...' };
     tradeInFlight = true;
 
@@ -738,104 +753,39 @@ async function processTrade(type, ticker, qty) {
         // Prevent floating point anomalies
         if (cost < 0 || isNaN(cost)) return { error: 'Invalid transaction calculation.' };
 
-        if (!holdings[ticker]) holdings[ticker] = { shares: 0, avgCost: 0 };
+        // Ensure holding is an object
+        if (!holdings[ticker] || typeof holdings[ticker] !== 'object') {
+            holdings[ticker] = { shares: 0, avgCost: 0 };
+        }
         const holding = holdings[ticker];
 
         if (type === 'BUY') {
             if (cost > cash) return { error: 'Insufficient buying power.' };
             cash -= cost;
-            const existingVal = holding.shares * holding.avgCost;
-            holding.shares += qty;
+            const existingVal = (holding.shares || 0) * (holding.avgCost || 0);
+            holding.shares = (holding.shares || 0) + qty;
             holding.avgCost = (existingVal + cost) / holding.shares;
         } else {
-            if (holding.shares < qty) return { error: 'Insufficient shares to sell.' };
+            if ((holding.shares || 0) < qty) return { error: 'Insufficient shares to sell.' };
             cash += cost;
-            holding.shares -= qty;
+            holding.shares = (holding.shares || 0) - qty;
             if (holding.shares === 0) delete holdings[ticker];
         }
 
         await saveGameState();
+        
+        // Update Local Storage and UI immediately
+        localStorage.setItem('game_state', JSON.stringify({ cash, holdings }));
+        renderDashboard();
+        
         return { success: true };
+    } catch (e) {
+        console.error("Trade error:", e);
+        return { error: 'Failed to process trade. Please check your connection.' };
     } finally {
         tradeInFlight = false;
     }
 }
-
-async function processTradeFromPanel() {
-    const errorEl = document.getElementById('trade-error');
-    errorEl.style.display = 'none';
-    errorEl.style.color = '#d32f2f';
-
-    if (!selectedTicker || !marketData[selectedTicker]) {
-        showTradeMsg('trade-error', 'Select a stock first.', false); return;
-    }
-    const qtyStr = document.getElementById('trade-qty').value;
-    const qty = parseInt(qtyStr);
-    const type = arguments[0];
-
-    if (isNaN(qty) || qty <= 0) {
-        showTradeMsg('trade-error', 'Enter a valid quantity.', false); return;
-    }
-
-    const res = await processTrade(type, selectedTicker, qty);
-    if (res?.error) {
-        showTradeMsg('trade-error', res.error, false);
-    } else {
-        document.getElementById('trade-qty').value = '';
-        showTradeMsg('trade-error', `Successfully ${type === 'BUY' ? 'bought' : 'sold'} ${qty} shares!`, true);
-    }
-}
-
-function showTradeMsg(elId, msg, success) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.textContent = msg;
-    el.style.color = success ? '#2e7d32' : '#d32f2f';
-    el.style.display = 'block';
-    setTimeout(() => { el.style.display = 'none'; }, 2500);
-}
-
-// Re-setup trade controls with proper handler
-(function() {
-    window.setupTradeControls = function() {
-        const btnBuy  = document.getElementById('btn-buy');
-        const btnSell = document.getElementById('btn-sell');
-
-        btnBuy?.addEventListener('click', async () => {
-            const errorEl = document.getElementById('trade-error');
-            errorEl.style.color = '#d32f2f';
-            errorEl.style.display = 'none';
-
-            if (!selectedTicker || !marketData[selectedTicker]) {
-                showTradeMsg('trade-error', 'Select a stock first.', false); return;
-            }
-            const qty = parseInt(document.getElementById('trade-qty').value);
-            if (isNaN(qty) || qty <= 0) {
-                showTradeMsg('trade-error', 'Enter a valid quantity.', false); return;
-            }
-            const res = await processTrade('BUY', selectedTicker, qty);
-            if (res?.error) showTradeMsg('trade-error', res.error, false);
-            else { document.getElementById('trade-qty').value = ''; showTradeMsg('trade-error', `Bought ${qty} shares!`, true); }
-        });
-
-        btnSell?.addEventListener('click', async () => {
-            const errorEl = document.getElementById('trade-error');
-            errorEl.style.color = '#d32f2f';
-            errorEl.style.display = 'none';
-
-            if (!selectedTicker || !marketData[selectedTicker]) {
-                showTradeMsg('trade-error', 'Select a stock first.', false); return;
-            }
-            const qty = parseInt(document.getElementById('trade-qty').value);
-            if (isNaN(qty) || qty <= 0) {
-                showTradeMsg('trade-error', 'Enter a valid quantity.', false); return;
-            }
-            const res = await processTrade('SELL', selectedTicker, qty);
-            if (res?.error) showTradeMsg('trade-error', res.error, false);
-            else { document.getElementById('trade-qty').value = ''; showTradeMsg('trade-error', `Sold ${qty} shares!`, true); }
-        });
-    };
-})();
 
 /* -------------------------------------------------------------------------- */
 /*                             QUICK MODAL (Holdings)                         */

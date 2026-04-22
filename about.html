@@ -521,95 +521,13 @@
 })();
 </script>
 
-<!-- Firebase auth for nav -->
+<!-- Supabase auth for nav -->
 <script type="module">
-  import { auth, db, onAuthStateChanged, signOut, doc, getDoc } from "./firebase-init.js";
-
-  function setNavAvatar(photoURL, name) {
-    const el = document.getElementById('nav-user-initials');
-    if (!el) return;
-    if (photoURL) {
-      el.innerHTML = `<img src="${photoURL}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-    } else {
-      el.textContent = name ? name.charAt(0).toUpperCase() : '?';
-    }
-  }
-
-  onAuthStateChanged(auth, async user => {
-    const loginBtn    = document.getElementById('nav-login-btn-link');
-    const userBtn     = document.getElementById('nav-user-btn');
-    const userNameEl  = document.getElementById('nav-user-name');
-    const mobileLogin = document.getElementById('mobile-login-link');
-    const mobileUser  = document.getElementById('mobile-user-link');
-
-    if (user) {
-      const name = user.displayName || user.email.split('@')[0];
-      if (loginBtn)    loginBtn.style.display  = 'none';
-      if (userBtn)     { userBtn.style.display = 'inline-flex'; if (userNameEl) userNameEl.textContent = name; }
-      if (mobileLogin) mobileLogin.style.display = 'none';
-      if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
-
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const photoURL = snap.exists() ? snap.data()?.photoURL : null;
-        setNavAvatar(photoURL || user.photoURL, name);
-      } catch {
-        setNavAvatar(user.photoURL, name);
-      }
-    } else {
-      if (loginBtn)    loginBtn.style.display  = '';
-      if (userBtn)     userBtn.style.display   = 'none';
-      if (mobileLogin) mobileLogin.style.display = '';
-      if (mobileUser)  mobileUser.style.display  = 'none';
-    }
-  });
-
-  window.navSignOut = async () => {
-    await signOut(auth);
-    window.location.href = 'index.html';
-  };
+  import { initNavAuth } from "./nav-auth.js";
+  initNavAuth();
 </script>
+
 <script>
-  function positionDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    if (!btn || !dd) return;
-
-    const rect = btn.getBoundingClientRect();
-
-    dd.style.position = 'fixed';
-    dd.style.left = rect.left + rect.width / 2 + 'px';
-    dd.style.top = rect.bottom + 'px';
-    dd.style.transform = 'translateX(-50%)';
-  }
-
-  function toggleDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    btn.classList.toggle('open');
-    dd.classList.toggle('open');
-
-    if (dd.classList.contains('open')) {
-      positionDropdown();
-    }
-  }
-
-  // Close on outside click
-  document.addEventListener('click', e => {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-
-    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
-      btn.classList.remove('open');
-      dd.classList.remove('open');
-    }
-  });
-
-  // Keep dropdown aligned on resize
-  window.addEventListener('resize', positionDropdown);
-
   // Dark mode init
   if (localStorage.getItem('darkMode') === 'true') {
     document.documentElement.classList.add('dark');

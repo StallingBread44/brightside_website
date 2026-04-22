@@ -148,11 +148,16 @@
 
   /* OVERLAY */
   .login-overlay {
-    position: absolute; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
-    display: none; /* hidden by default, JS shows it only when logged out */
-    flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+    position: absolute; inset: 0; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
+    display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
     border-radius: 20px; text-align: center; padding: 2rem;
   }
+  .login-overlay h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--forest); margin-bottom: 1rem; }
+  .login-overlay p { color: #6b7280; margin-bottom: 1.5rem; }
+  
+  html.dark .login-overlay { background: rgba(26,31,26,0.7); }
+  html.dark .login-overlay h3 { color: #e8f0e0; }
+  html.dark .login-overlay p { color: #8fa887; }
 
   /* CHARTING */
   .chart-container { height: 300px; width: 100%; position: relative; margin: 1.5rem 0; }
@@ -372,7 +377,7 @@
   </button>
 </nav>
 
-<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link" style="visibility:hidden;">Log In</a>
+<a href="auth.html" class="nav-login-btn" id="nav-login-btn-link">Log In</a>
 <button class="nav-user-btn" id="nav-user-btn" onclick="toggleDropdown()" style="display:none;">
   <div class="nav-user-avatar" id="nav-user-initials">?</div>
   <span id="nav-user-name"></span>
@@ -416,8 +421,8 @@
       <div>
         <div class="game-panel">
           <div id="portfolio-overlay" class="login-overlay">
-            <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--forest);margin-bottom:1rem;">Log in to trade</h3>
-            <p style="color:#6b7280;margin-bottom:1.5rem;">Save your progress and compete.</p>
+            <h3>Log in to trade</h3>
+            <p>Save your progress and compete.</p>
             <a href="auth.html" class="btn-primary">Log In</a>
           </div>
 
@@ -561,7 +566,11 @@
             </div>
 
             <!-- Quick Trade -->
-            <div style="display:flex;gap:0.6rem;margin-top:1rem;" id="detail-trade-btns">
+            <div style="display:flex;gap:0.6rem;margin-top:1rem;position:relative;" id="detail-trade-btns-container">
+              <div id="trade-overlay" class="login-overlay" style="border-radius:12px; padding: 1rem;">
+                <p style="margin-bottom:0.5rem; font-size:0.9rem;">Log in to buy/sell</p>
+                <a href="auth.html" class="btn-primary" style="padding:0.5rem 1rem; font-size:0.8rem;">Log In</a>
+              </div>
               <button class="btn-buy" id="detail-btn-buy" style="flex:1;">Buy</button>
               <button class="btn-sell" id="detail-btn-sell" style="flex:1;">Sell</button>
             </div>
@@ -608,13 +617,11 @@
 })();
 </script>
 
-<!-- Firebase SDK -->
+<!-- Supabase SDK -->
 <script type="module">
-  import { auth, db, onAuthStateChanged, signOut, doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs } from "./firebase-init.js";
+  import { supabase } from "./supabase-init.js";
 
-  window.auth = auth;
-  window.db = db;
-  window.firebaseModules = { doc, getDoc, setDoc, onSnapshot, collection, query, limit, getDocs };
+  window.supabase = supabase;
 
   function setNavAvatar(photoURL, name) {
     const el = document.getElementById('nav-user-initials');
@@ -626,82 +633,35 @@
     }
   }
 
-  // Use a flag so we only dispatch GameAuthReady once per session
+  // ── Nav & Auth ──
+  import { initNavAuth } from "./nav-auth.js";
+  
   let gameStarted = false;
-
-  onAuthStateChanged(auth, async user => {
-    const loginBtn    = document.getElementById('nav-login-btn-link');
-    const userBtn     = document.getElementById('nav-user-btn');
-    const userNameEl  = document.getElementById('nav-user-name');
-    const mobileLogin = document.getElementById('mobile-login-link');
-    const mobileUser  = document.getElementById('mobile-user-link');
-    const pOverlay    = document.getElementById('portfolio-overlay');
-    const tOverlay    = document.getElementById('trade-overlay');
-
-    if (user) {
-      const name = user.displayName || user.email.split('@')[0];
-      // Show user button, hide login
-      if (loginBtn)    { loginBtn.style.visibility = 'hidden'; }
-      if (userBtn)     { userBtn.style.display = 'inline-flex'; if (userNameEl) userNameEl.textContent = name; }
-      if (mobileLogin) mobileLogin.style.display = 'none';
-      if (mobileUser)  { mobileUser.style.display = ''; mobileUser.textContent = name; }
-      if (pOverlay)    pOverlay.style.display = 'none';
-      if (tOverlay)    tOverlay.style.display = 'none';
-
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const photoURL = snap.exists() ? snap.data()?.photoURL : null;
-        setNavAvatar(photoURL || user.photoURL, name);
-      } catch {
-        setNavAvatar(user.photoURL, name);
+  
+  initNavAuth({
+    onAuthStateChange: (event, session) => {
+      const user = session?.user;
+      const pOverlay = document.getElementById('portfolio-overlay');
+      const tOverlay = document.getElementById('trade-overlay');
+      
+      if (user) {
+        if (pOverlay) pOverlay.style.display = 'none';
+        if (tOverlay) tOverlay.style.display = 'none';
+        
+        if (!gameStarted) {
+          gameStarted = true;
+          window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user } }));
+        }
+      } else {
+        if (pOverlay) pOverlay.style.display = 'flex';
+        if (tOverlay) tOverlay.style.display = 'flex';
+        gameStarted = false;
       }
-
-      if (!gameStarted) {
-        gameStarted = true;
-        window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user } }));
-      }
-
-    } else {
-      if (loginBtn)    { loginBtn.style.visibility = 'visible'; }
-      if (userBtn)     userBtn.style.display = 'none';
-      if (mobileLogin) mobileLogin.style.display = '';
-      if (mobileUser)  mobileUser.style.display = 'none';
-      if (pOverlay)    { pOverlay.style.display = 'flex'; }
-      if (tOverlay)    { tOverlay.style.display = 'flex'; }
-      gameStarted = false;
     }
   });
-
-  window.navSignOut = async () => {
-    await signOut(auth);
-    window.location.reload();
-  };
 </script>
 
 <script>
-  function positionDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-    if (!btn || !dd) return;
-    const rect = btn.getBoundingClientRect();
-    dd.style.position = 'fixed'; dd.style.left = rect.left + rect.width / 2 + 'px';
-    dd.style.top = rect.bottom + 'px'; dd.style.transform = 'translateX(-50%)';
-  }
-  function toggleDropdown() {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-    btn.classList.toggle('open'); dd.classList.toggle('open');
-    if (dd.classList.contains('open')) positionDropdown();
-  }
-  document.addEventListener('click', e => {
-    const btn = document.getElementById('nav-user-btn');
-    const dd  = document.getElementById('nav-dropdown');
-    if (btn && !btn.contains(e.target) && dd && !dd.contains(e.target)) {
-      btn.classList.remove('open'); dd.classList.remove('open');
-    }
-  });
-  window.addEventListener('resize', positionDropdown);
-
   // Tab switching
   document.querySelectorAll('.sim-tab').forEach(tab => {
     tab.addEventListener('click', () => {
