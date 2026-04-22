@@ -323,13 +323,29 @@
     .chart-range-toggles { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
     .chart-range-toggles::-webkit-scrollbar { display: none; }
 
-    /* Portfolio table: make it scroll + reduce columns */
-    .portfolio-table th, .portfolio-table td { font-size: 0.8rem; padding: 0.7rem 0.4rem; }
-    .holding-actions { flex-direction: column; gap: 0.25rem; }
-    .btn-hold-buy, .btn-hold-sell { padding: 0.25rem 0.5rem; }
-
-    /* Stocks table */
-    .stocks-table td, .stocks-table th { font-size: 0.8rem; }
+    /* Mobile Table Cards */
+    .portfolio-table, .portfolio-table tbody, .portfolio-table tr, .portfolio-table td,
+    .stocks-table, .stocks-table tbody, .stocks-table tr, .stocks-table td {
+        display: block; width: 100%; box-sizing: border-box;
+    }
+    .portfolio-table thead, .stocks-table thead { display: none; }
+    .portfolio-table tr, .stocks-table tr {
+        margin-bottom: 1rem; border: 1px solid rgba(43,66,36,0.1); border-radius: 12px;
+        padding: 1rem; box-shadow: 0 4px 12px rgba(43,66,36,0.05); background: white;
+    }
+    html.dark .portfolio-table tr, html.dark .stocks-table tr { background: #242924; border-color: rgba(142,186,126,0.15); }
+    .portfolio-table td, .stocks-table td {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.6rem 0; border-bottom: 1px solid rgba(43,66,36,0.05); text-align: right; font-size: 0.9rem;
+    }
+    html.dark .portfolio-table td, html.dark .stocks-table td { border-bottom-color: rgba(142,186,126,0.05); }
+    .portfolio-table td:last-child, .stocks-table td:last-child { border-bottom: none; }
+    .portfolio-table td::before, .stocks-table td::before {
+        content: attr(data-label); font-family: 'DM Mono', monospace; font-size: 0.75rem;
+        color: #9ca3af; text-transform: uppercase; text-align: left; margin-right: 1rem;
+    }
+    .holding-actions { display: flex; flex-direction: row; gap: 0.5rem; justify-content: flex-end; width: 100%; }
+    .btn-hold-buy, .btn-hold-sell { flex: 1; text-align: center; justify-content: center; padding: 0.5rem; }
 
     /* Stock detail */
     .stock-detail-ticker { font-size: 1.5rem; }

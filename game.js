@@ -276,17 +276,17 @@ function renderDashboard() {
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>
+            <td data-label="Asset">
                 <div class="ticker-cell">
                     <span>${t}</span>
                     <span class="ticker-name">${name}</span>
                 </div>
             </td>
-            <td>${shares}</td>
-            <td>${formatMoney(avgCost)}</td>
-            <td>${formatMoney(currentPrice)}</td>
-            <td class="${retColor}">${retSign}${formatMoney(returnAmt)}<br><span style="font-size:0.8rem;">(${retSign}${returnPct.toFixed(2)}%)</span></td>
-            <td>
+            <td data-label="Shares">${shares}</td>
+            <td data-label="Avg Cost">${formatMoney(avgCost)}</td>
+            <td data-label="Price">${formatMoney(currentPrice)}</td>
+            <td data-label="Return" class="${retColor}">${retSign}${formatMoney(returnAmt)}<br><span style="font-size:0.8rem;">(${retSign}${returnPct.toFixed(2)}%)</span></td>
+            <td data-label="Actions">
                 <div class="holding-actions">
                     <button class="btn-hold-buy" onclick="openQuickModal('${t}','BUY')">Buy+</button>
                     <button class="btn-hold-sell" onclick="openQuickModal('${t}','SELL')">Sell</button>
@@ -417,12 +417,12 @@ function renderStocksTable() {
         const tr = document.createElement('tr');
         tr.style.cursor = 'pointer';
         tr.innerHTML = `
-            <td><span class="sym">${t}</span><span class="co-name">${d.name || ''}</span></td>
-            <td>${formatMoney(price)}</td>
-            <td style="color:${cColor};font-weight:600;">${cSign}${formatMoney(change)}</td>
-            <td style="color:${cColor};font-weight:600;">${cSign}${changePct.toFixed(2)}%</td>
-            <td>${formatVolume(vol)}</td>
-            <td>${formatMktCap(mktCap)}</td>
+            <td data-label="Asset"><span class="sym">${t}</span><span class="co-name">${d.name || ''}</span></td>
+            <td data-label="Price">${formatMoney(price)}</td>
+            <td data-label="Change" style="color:${cColor};font-weight:600;">${cSign}${formatMoney(change)}</td>
+            <td data-label="Change %" style="color:${cColor};font-weight:600;">${cSign}${changePct.toFixed(2)}%</td>
+            <td data-label="Volume">${formatVolume(vol)}</td>
+            <td data-label="Market Cap">${formatMktCap(mktCap)}</td>
         `;
         tr.addEventListener('click', () => selectDetailStock(t));
         tbody.appendChild(tr);
