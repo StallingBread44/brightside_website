@@ -11,9 +11,13 @@ let supabase = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   try {
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log("Supabase initialized successfully.");
   } catch (e) {
     console.error("Failed to initialize Supabase client:", e);
   }
+} else {
+  console.error("Supabase URL or Anon Key is missing in supabase-init.js!");
 }
 
+window.supabase = supabase; // Fallback for non-module scripts
 export { supabase };

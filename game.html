@@ -302,6 +302,13 @@
     /* Tabs: scrollable row, don't wrap */
     .sim-tabs { gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
     .sim-tabs::-webkit-scrollbar { display: none; }
+    
+    .blurred-content {
+      filter: blur(8px);
+      pointer-events: none;
+      user-select: none;
+      transition: filter 0.3s ease;
+    }
     .sim-tab { font-size: 0.85rem; padding: 0.7rem 1.1rem; white-space: nowrap; flex-shrink: 0; }
 
     /* Panels */
@@ -641,13 +648,20 @@
   initNavAuth({
     onAuthStateChange: (event, session) => {
       const user = session?.user;
+      const pContainer = document.querySelector('.portfolio-section');
+      const tContainer = document.querySelector('.sim-card.trade-card');
       const pOverlay = document.getElementById('portfolio-overlay');
       const tOverlay = document.getElementById('trade-overlay');
       
       if (user) {
         if (pOverlay) pOverlay.style.display = 'none';
         if (tOverlay) tOverlay.style.display = 'none';
+        if (pContainer) pContainer.classList.remove('blurred-content');
+        if (tContainer) tContainer.classList.remove('blurred-content');
         
+        // Enable buy/sell buttons
+        document.querySelectorAll('#btn-buy, #btn-sell, #detail-btn-buy, #detail-btn-sell').forEach(btn => btn.disabled = false);
+
         if (!gameStarted) {
           gameStarted = true;
           window.dispatchEvent(new CustomEvent('GameAuthReady', { detail: { user } }));
@@ -655,6 +669,12 @@
       } else {
         if (pOverlay) pOverlay.style.display = 'flex';
         if (tOverlay) tOverlay.style.display = 'flex';
+        if (pContainer) pContainer.classList.add('blurred-content');
+        if (tContainer) tContainer.classList.add('blurred-content');
+
+        // Disable buy/sell buttons
+        document.querySelectorAll('#btn-buy, #btn-sell, #detail-btn-buy, #detail-btn-sell').forEach(btn => btn.disabled = true);
+        
         gameStarted = false;
       }
     }
